@@ -94,11 +94,11 @@ section                    address   length (PC units)   length (bytes) (dec)
 -------                    -------   -----------------   --------------------
 .text                        0x200               0x1ec           0x2e2  (738)
 .const                       0x3ec               0x200           0x300  (768)
-.text                        0x5ec               0x362           0x513  (1299)
-.init.delay32                0x94e                0x1c            0x2a  (42)
-.dinit                       0x96a                0x1c            0x2a  (42)
+.text                        0x5ec               0x366           0x519  (1305)
+.init.delay32                0x952                0x1c            0x2a  (42)
+.dinit                       0x96e                0x1c            0x2a  (42)
 
-                 Total "program" memory used (bytes):          0xb49  (2889) 8%
+                 Total "program" memory used (bytes):          0xb4f  (2895) 8%
 
 
 "data" Memory  [Origin = 0x1000, Length = 0x1000]
@@ -155,35 +155,35 @@ External Symbols in Program Memory (by address):
                   0x000672                  _PWM_Init
                   0x000734                  _PWM_Update
                   0x0007be                  _PWM_Mode2
-                  0x000854                  _UART_SendByte
-                  0x000876                  _UART_Init
-                  0x0008ce                  _CrcValueByteCalc
-                  0x00091a                  _main
-                  0x00094e                  ___delay32
+                  0x000858                  _UART_SendByte
+                  0x00087a                  _UART_Init
+                  0x0008d2                  _CrcValueByteCalc
+                  0x00091e                  _main
+                  0x000952                  ___delay32
                   0x005780                  __FSEC.sec
 
 External Symbols in Program Memory (by name):
 
                   0x0005ec                  _Clock_Init
-                  0x0008ce                  _CrcValueByteCalc
+                  0x0008d2                  _CrcValueByteCalc
                   0x00065c                  _IO_Init
                   0x000672                  _PWM_Init
                   0x0007be                  _PWM_Mode2
                   0x000734                  _PWM_Update
-                  0x000876                  _UART_Init
-                  0x000854                  _UART_SendByte
+                  0x00087a                  _UART_Init
+                  0x000858                  _UART_SendByte
                   0x0003c6                  __DefaultInterrupt
                   0x005780                  __FSEC.sec
                   0x0002fa                  __PWMSpEventMatchInterrupt
                   0x000302                  __U1RXInterrupt
-                  0x00094e                  ___delay32
+                  0x000952                  ___delay32
                   0x0003cc                  ___udivsi3
                   0x000248                  __data_init
                   0x000248                  __data_init_extended
                   0x00023c                  __psv_init
                   0x000200                  __resetPRI
                   0x0003ec                  _crc16Table
-                  0x00091a                  _main
+                  0x00091e                  _main
 
 Memory Configuration
 
@@ -1689,23 +1689,23 @@ __c30_signature
  .const             0x83ec        0x200 build/Copy_of_default/production/uart.o
                     0x83ec                  _crc16Table
 
-.text             0x0005ec        0x362
- .text            0x0005ec        0x268 build/Copy_of_default/production/PWM.o
+.text             0x0005ec        0x366
+ .text            0x0005ec        0x26c build/Copy_of_default/production/PWM.o
                   0x0005ec                  _Clock_Init
                   0x00065c                  _IO_Init
                   0x000672                  _PWM_Init
                   0x000734                  _PWM_Update
                   0x0007be                  _PWM_Mode2
- .text            0x000854         0xc6 build/Copy_of_default/production/uart.o
-                  0x000854                  _UART_SendByte
-                  0x000876                  _UART_Init
-                  0x0008ce                  _CrcValueByteCalc
- .text            0x00091a         0x34 build/Copy_of_default/production/main.o
-                  0x00091a                  _main
+ .text            0x000858         0xc6 build/Copy_of_default/production/uart.o
+                  0x000858                  _UART_SendByte
+                  0x00087a                  _UART_Init
+                  0x0008d2                  _CrcValueByteCalc
+ .text            0x00091e         0x34 build/Copy_of_default/production/main.o
+                  0x00091e                  _main
 
-.init.delay32     0x00094e         0x1c
- .init.delay32    0x00094e         0x1c c:/program files/microchip/xc16/v2.10/bin/bin/../../lib\libc99-pic30-elf.a(delay32ep.Meo)
-                  0x00094e                  ___delay32
+.init.delay32     0x000952         0x1c
+ .init.delay32    0x000952         0x1c c:/program files/microchip/xc16/v2.10/bin/bin/../../lib\libc99-pic30-elf.a(delay32ep.Meo)
+                  0x000952                  ___delay32
 
-.dinit            0x00096a         0x1c
- .dinit           0x00096a         0x1c data_init
+.dinit            0x00096e         0x1c
+ .dinit           0x00096e         0x1c data_init

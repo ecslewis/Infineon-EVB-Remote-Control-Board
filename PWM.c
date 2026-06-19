@@ -218,9 +218,9 @@ void PWM_Mode2(uint32_t freq, uint8_t duty)
     PWMCON1bits.DTC = 0b00; //set positive deadtime
     PWMCON1bits.IUE = 0; //wait until PWM cycle ends to update
     DTR1    = 12;  
-    ALTDTR1 = 0;
+    ALTDTR1 = 12;
     DTR2    = 12; 
-    ALTDTR2 = 0;
+    ALTDTR2 = 12;
     PWMCON1bits.MDCS  = 1;    //MDC
     PWMCON1bits.ITB   = 0;    // PTPER
 
