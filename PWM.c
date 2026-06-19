@@ -199,7 +199,7 @@ void PWM_Update(uint32_t freq, uint8_t duty)
     PTCONbits.PTEN      = 1;   
 }
 
-void PWM_Mode2(uint32_t freq, uint8_t duty)
+void PWM_Mode2(uint32_t freq, uint8_t duty, uint16_t dt_ns)
 {
     PTCONbits.PTEN  = 0;      
     uint16_t period  = (uint16_t)((FPWM / freq) - 1);
@@ -215,12 +215,14 @@ void PWM_Mode2(uint32_t freq, uint8_t duty)
     IOCON1bits.PENH   = 1;
     IOCON1bits.PENL   = 1;
     IOCON1bits.PMOD   = 0b00; // Complementary
+    uint16_t dt_counts = (uint16_t)((uint32_t)dt_ns * 118UL / 1000UL);
+    if(dt_counts > 59) dt_counts = 59;   // clamp to 500ns max
     PWMCON1bits.DTC = 0b00; //set positive deadtime
     PWMCON1bits.IUE = 0; //wait until PWM cycle ends to update
-    DTR1    = 12;  
-    ALTDTR1 = 12;
-    DTR2    = 12; 
-    ALTDTR2 = 12;
+    DTR1    = dt_counts;  
+    ALTDTR1 = dt_counts;
+    DTR2    = 0; 
+    ALTDTR2 = 0;
     PWMCON1bits.MDCS  = 1;    //MDC
     PWMCON1bits.ITB   = 0;    // PTPER
 

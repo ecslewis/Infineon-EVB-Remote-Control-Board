@@ -84,7 +84,7 @@ while(1){
             freq_update_pending = 0;
         }
      if (pwm_mode2_pending==1){
-         PWM_Mode2(new_freq, new_duty);
+         PWM_Mode2(new_freq, new_duty, new_dt_ns);
          pwm_mode2_pending =0; //clear flag
      }
 }
