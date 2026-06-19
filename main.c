@@ -2,7 +2,7 @@
  * File:   main.c
  * Device: dsPIC33EP128GS808
  */
-
+//NEW VERSION!!!
 #pragma config BWRP = OFF //ON //OFF // Boot Segment Write-Protect bit (Boot Segment may be written)
 //boot write protect-- memory locked or not -> off means not locked anyone can write to the boot memory
 //boot memory= memory OS allocates when a system starts up (booting/powering up)
