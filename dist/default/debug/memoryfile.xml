@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project>
+  <executable name="dist/default/debug/BDS_CONTROL.X.debug.elf">
+    <memory name="data">
+      <units>bytes</units>
+      <length>4096</length>
+      <used>90</used>
+      <free>4006</free>
+    </memory>
+    <memory name="program">
+      <units>bytes</units>
+      <length>32832</length>
+      <used>972</used>
+      <free>31860</free>
+    </memory>
+  </executable>
+</project>

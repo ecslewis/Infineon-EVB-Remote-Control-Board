@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project>
+  <executable name="dist/Copy_of_default/production/BDS_CONTROL.X.production.elf">
+    <memory name="data">
+      <units>bytes</units>
+      <length>4096</length>
+      <used>22</used>
+      <free>4074</free>
+    </memory>
+    <memory name="program">
+      <units>bytes</units>
+      <length>32832</length>
+      <used>2889</used>
+      <free>29943</free>
+    </memory>
+  </executable>
+</project>
