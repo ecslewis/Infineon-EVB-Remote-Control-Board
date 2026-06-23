@@ -1,2 +1,4 @@
 # Infineon-EVB-Remote-Control-Board
-Infineon Embedded MCU project -- Version control needed
+Infineon 900V EVB Control firmware
+Features ACZVS, DCZVS and DyR platforms
+Compatible with unidirectional devices
