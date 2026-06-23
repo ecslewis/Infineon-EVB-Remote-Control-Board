@@ -73,7 +73,7 @@ void __attribute__((interrupt, no_auto_psv)) _U1RXInterrupt(void) {
     switch(rx_buf[0]) {
         case 0x02:          // TURN PWM OFF
             PTCONbits.PTEN = 0;
-            rx_idx = 0;     // Reset immediately
+            rx_idx = 0;     // rst
             break;
             
        case 0x03:              // SET FREQUENCY + DUTY
@@ -86,7 +86,7 @@ void __attribute__((interrupt, no_auto_psv)) _U1RXInterrupt(void) {
                 rx_idx = 0;
             }
             break;
-    case 0x04:              // ZVS - PWM1 switching + PWM2 constant + deadtime
+    case 0x04:              // ZVS--> PWM1 + deadtime
         if(rx_idx >= 6) {
             uint16_t freq_khz = ((uint16_t)rx_buf[1] << 8)
                                  | rx_buf[2];
@@ -98,7 +98,7 @@ void __attribute__((interrupt, no_auto_psv)) _U1RXInterrupt(void) {
             rx_idx = 0;
         }
               break;
-            
+              /*need to implement: AC-ZVS operation mode, dyRdson*/
         default: //anything else not ins tate machine
             rx_idx = 0;     
             break;

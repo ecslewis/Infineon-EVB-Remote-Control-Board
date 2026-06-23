@@ -71,6 +71,12 @@
 
 int main(void)
 {
+    RCONbits.SWDTEN = 0;  // disable software WDT
+   
+    volatile uint16_t reset_cause = RCON;
+    RCON = 0x0000;  // Clear flags
+    
+    
    Clock_Init();
     IO_Init();
     UART_Init(); //no communication for now
@@ -78,7 +84,7 @@ int main(void)
     //UART_SendByte(0xAA);  // send 0xAA continuously
     //PWM_Init(); //only enable the PWM signalsfrom the board
 while(1){
-     ClrWdt(); 
+     ClrWdt();
      if(freq_update_pending == 1) {
             PWM_Update(new_freq, new_duty);   // ? Update frequency
             freq_update_pending = 0;
