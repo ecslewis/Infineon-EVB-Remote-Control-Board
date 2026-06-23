@@ -16,19 +16,6 @@ volatile uint8_t pwm_mode2_pending =0;
 static uint32_t current_freq = DEFAULT_FREQ;
 static uint8_t  current_duty = DEFAULT_DUTY;
 
-/* -----------------------------------------------------------------------
- * PMOD = 0b00  -> Complementary mode
- *   Hardware automatically drives PWMxL = NOT PWMxH
- * MDCS = 1     -> Both generators share the Master Duty Cycle register (MDC)
- *   so PWM1 and PWM2 are always identical
- *
- * WARNING:
- *   FPWM = 3,685,000 Hz
- *   PTPER = (3685000 / 200000) - 1 = ~17  (only ~18 counts of resolution)
- *   50% duty => MDC = ~8 or 9 counts
- *   If you need finer resolution reduce the target frequency or raise
- *   the peripheral clock (FP / FPWM).
- * ----------------------------------------------------------------------- */
 void __attribute__((interrupt, no_auto_psv)) _PWMSpEventMatchInterrupt(void)
 {
     //Nop();
@@ -142,26 +129,7 @@ void PWM_Init(void)
     //MDC   = 200;   // hardcode directly
     /* Enable timebase */
     PTCONbits.PTEN      = 1; //re enable PWm signals
-
-//    /* ------------------------------------------------------------------ */
-//    /* Special Event Interrupt  (fires once per PWM period)               */
-//    /* Used to safely update frequency / duty from UART commands          */
-//    /* ------------------------------------------------------------------ */
-//    PTCONbits.SESTAT   = 0;        /* Clear special event status flag     */
-//    PTCONbits.SEIEN    = 0;        /* Enable special event interrupt      */
-//    IFS3bits.PSEMIF    = 0;        /* Clear interrupt flag                */
-//    IEC3bits.PSEMIE    = 0;        /* Enable PSEM interrupt               */
-//    IPC14bits.PSEMIP   = 2;        /* Set interrupt priority to 2         */
-//    IFS3                = 0x0000;  /* clear ALL IFS3 flags                */
-//    IEC3                = 0x0000;  /* disable ALL IFS3 interrupts         */
 }
-
-/* -----------------------------------------------------------------------
- * PWM_Update  -  called from PSEM ISR (safe, period-synchronised)
- *
- * PWM1H & PWM2H : new freq / duty
- * PWM1L & PWM2L : complement handled automatically by hardware (PMOD=0b00)
- * ----------------------------------------------------------------------- */
 void PWM_Update(uint32_t freq, uint8_t duty)
 {
     uint16_t period  = (uint16_t)((FPWM / freq) - 1);
@@ -181,7 +149,7 @@ void PWM_Update(uint32_t freq, uint8_t duty)
     IOCON1bits.OVRENL   = 0;
     IOCON2bits.OVRENH   = 0;
     IOCON2bits.OVRENL   = 0;
-    IOCON2bits.PMOD   = 0b00; // Complementary
+    IOCON2bits.PMOD   = 0b00; // Complementary 
     IOCON1bits.PMOD = 0b00;  // Complementary
     
     PWMCON1bits.MDCS    = 1;

@@ -90,7 +90,7 @@ while(1) {
     if(Uart_Fault_CNT > 10) {
         // Too many CRC errors
         // EMI is bad
-        // Maybe stop PWM for safety
+   // Maybe stop PWM for safety?? 
         PTCONbits.PTEN = 0;
         Uart_Fault_CNT = 0;
     }

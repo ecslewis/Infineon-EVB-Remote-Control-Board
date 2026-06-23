@@ -107,6 +107,11 @@ void UART_Init(){
 //}   
 
 void __attribute__((interrupt, no_auto_psv)) _U1RXInterrupt(void) {
+ /*
+ Notice: 
+ *      the define message struction is as follows: It is transmitted packet by packet
+ *     [0xAB][0xAA][LEN][CMD][DATA...][CRCH][CRCL][0xCD]
+ */
     IFS0bits.U1RXIF = 0;
 
     static uint8_t  rx_buf[16];
@@ -118,24 +123,18 @@ void __attribute__((interrupt, no_auto_psv)) _U1RXInterrupt(void) {
 
     uint8_t byte = U1RXREG;
 
-    // ??????????????????????????????????????????
-    // Wait for start byte 0xAB
-    // ??????????????????????????????????????????
+//wait for start of a message, start of message starts with 0xAB
     if(rx_in_process == 0) {
-        if(byte == 0xAB) {
+        if(byte == 0xAB) { 
             rx_buf[0]    = byte;
             rx_idx       = 1;
             rx_in_process = 1;
         }
         return;
     }
-
-    // ??????????????????????????????????????????
-    // Receiving packet
-    // ??????????????????????????????????????????
+//receive packets when start of a message (after 0xAB)
     rx_buf[rx_idx++] = byte;
-
-    // Validate second start byte
+//validate second start bte 
     if(rx_idx == 2) {
         if(byte != 0xAA) {
             rx_in_process = 0;
@@ -143,14 +142,12 @@ void __attribute__((interrupt, no_auto_psv)) _U1RXInterrupt(void) {
             return;
         }
     }
-
-    // Get length
+    // extract 3rd byte of message, giving length 
     if(rx_idx == 3) {
         length = byte;
     }
 
-    // Check if full packet received
-    // [0xAB][0xAA][LEN][CMD][DATA...][CRCH][CRCL][0xCD]
+    // check lenght of packet received: make sure the message received in complete
     // Total = LEN + 6
     if(rx_idx >= (length + 6)) {
         // Check end byte
@@ -160,7 +157,7 @@ void __attribute__((interrupt, no_auto_psv)) _U1RXInterrupt(void) {
             return;
         }
 
-        // Verify CRC
+        //calculate CRC
         uint16_t crc_received = ((uint16_t)rx_buf[length + 3] << 8)
                                   | rx_buf[length + 4];
         uint16_t crc_calc     = CrcValueByteCalc(
@@ -169,16 +166,14 @@ void __attribute__((interrupt, no_auto_psv)) _U1RXInterrupt(void) {
                                 );
 
         if(crc_calc != crc_received) {
-            // CRC failed = EMI corrupted packet
+            // CRC failed, do NOT proceed, data packets were lost in transmission...
             rx_in_process = 0;
             rx_idx        = 0;
             Uart_Fault_CNT++;  // Track errors
             return;
         }
 
-        // ??????????????????????????????????????????
-        // Valid packet - process command
-        // ??????????????????????????????????????????
+        //means valid packets -- can proceed to read instruction
         uint8_t cmd = rx_buf[3];
 
         switch(cmd) {
@@ -186,7 +181,7 @@ void __attribute__((interrupt, no_auto_psv)) _U1RXInterrupt(void) {
                 PTCONbits.PTEN = 0;
                 break;
 
-            case 0x03:          // MODE 1
+            case 0x03:          // MODE 1, simple pwm (mostly for testing purposes)
                 {
                     uint16_t freq_khz = ((uint16_t)rx_buf[4] << 8)
                                          | rx_buf[5];
@@ -196,7 +191,7 @@ void __attribute__((interrupt, no_auto_psv)) _U1RXInterrupt(void) {
                 }
                 break;
 
-            case 0x04:          // MODE 2
+            case 0x04:          // MODE 2, DC-ZVS (for buck/boost aswell.)
                 {
                     uint16_t freq_khz = ((uint16_t)rx_buf[4] << 8)
                                          | rx_buf[5];
@@ -243,11 +238,11 @@ const uint16_t crc16Table[256] =
 0x0041, 0xC181, 0x8180, 0x4040,
 };
 
+
 uint16_t CrcValueByteCalc(const uint8_t *data, volatile uint8_t length)
 {
     uint16_t crcValue = 0xFFFF;
     uint16_t tmp;
-
     while (length--)
     {
         tmp = crc16Table[(crcValue ^ *data++) & 0x00FF];
