@@ -61,7 +61,7 @@ void UART_Init(){
     //U1TXREG = 0xAA;
 }
 void __attribute__((interrupt, no_auto_psv)) _U1RXInterrupt(void) {
-    IFS0bits.U1RXIF = 0;
+    IFS0bits.U1RXIF = 0; //clear interrupt flag
     
     static uint8_t rx_buf[6];
     static uint8_t rx_idx = 0;
@@ -103,4 +103,5 @@ void __attribute__((interrupt, no_auto_psv)) _U1RXInterrupt(void) {
             rx_idx = 0;     
             break;
     }
-}
+}   
+
