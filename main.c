@@ -83,16 +83,27 @@ int main(void)
     //__delay_ms(10);
     //UART_SendByte(0xAA);  // send 0xAA continuously
     //PWM_Init(); //only enable the PWM signalsfrom the board
-while(1){
-     ClrWdt();
-     if(freq_update_pending == 1) {
-            PWM_Update(new_freq, new_duty);   // ? Update frequency
-            freq_update_pending = 0;
-        }
-     if (pwm_mode2_pending==1){
-         PWM_Mode2(new_freq, new_duty, new_dt_ns);
-         pwm_mode2_pending =0; //clear flag
-     }
+while(1) {
+    ClrWdt();
+
+    // Monitor fault count
+    if(Uart_Fault_CNT > 10) {
+        // Too many CRC errors
+        // EMI is bad
+        // Maybe stop PWM for safety
+        PTCONbits.PTEN = 0;
+        Uart_Fault_CNT = 0;
+    }
+
+    if(freq_update_pending == 1) {
+        PWM_Update(new_freq, new_duty);
+        freq_update_pending = 0;
+    }
+
+    if(pwm_mode2_pending == 1) {
+        PWM_Mode2(new_freq, new_duty, new_dt_ns);
+        pwm_mode2_pending = 0;
+    }
 }
     return 0;
 }
