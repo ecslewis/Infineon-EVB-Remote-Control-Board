@@ -58,6 +58,7 @@ _PWMSpEventMatchInterrupt(void)
         case 1:                     // 50kHz cycle done, go back to normal now
             {
                 // restor old frequency
+                LATBbits.LATB3 = 1;
                 uint16_t period  = (uint16_t)((FPWM / saved_freq) - 1);
                 uint16_t compare = (uint16_t)((uint32_t)period
                                     * saved_duty / 100);
@@ -68,7 +69,6 @@ _PWMSpEventMatchInterrupt(void)
                 MDC              = compare;
                 PDC1             = compare;
                 PDC2             = compare;
-                LATBbits.LATB3 = 1;
                 PTCONbits.PTEN   = 1;
 
                 rdson_cycle_done = 1;
@@ -287,7 +287,7 @@ void Timer1_Init(void)
     T1CONbits.TCS    = 0;     // Internal FCY
     T1CONbits.TCKPS  = 0b11;  // 1:256 prescaler
     TMR1             = 0;
-    PR1              = (uint16_t)(FCY / 256 / 2);
+    PR1              = (uint16_t)(FCY / 256*2);
                               // ? 500ms
 
     IFS0bits.T1IF    = 0;
