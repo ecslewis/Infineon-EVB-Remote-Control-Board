@@ -183,6 +183,7 @@ void __attribute__((interrupt, no_auto_psv)) _U1RXInterrupt(void) {
             case 0x02:          // STOP
                 PTCONbits.PTEN = 0;
                 LATBbits.LATB2 = 1;
+                LATBbits.LATB3 = 0;
                 break;
 
             case 0x03:          // MODE 1, simple pwm (mostly for testing purposes)

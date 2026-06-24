@@ -55,7 +55,6 @@ _PWMSpEventMatchInterrupt(void)
 
         case 1:                     // 50kHz cycle done, go back to normal now
             {
-                LATBbits.LATB2 = 1;
                 // restor old frequency
                 uint16_t period  = (uint16_t)((FPWM / saved_freq) - 1);
                 uint16_t compare = (uint16_t)((uint32_t)period
@@ -67,6 +66,7 @@ _PWMSpEventMatchInterrupt(void)
                 MDC              = compare;
                 PDC1             = compare;
                 PDC2             = compare;
+                LATBbits.LATB3 = 1;
                 PTCONbits.PTEN   = 1;
 
                 rdson_cycle_done = 1;
@@ -114,8 +114,12 @@ void IO_Init(void)
         TRISAbits.TRISA3=0;
         TRISBbits.TRISB13=0;
         TRISBbits.TRISB14=0;
+        ANSELBbits.ANSB2  = 0;   // Disable analog
         TRISBbits.TRISB2  = 0;  //set as output
         LATBbits.LATB2 = 1;
+        ANSELBbits.ANSB3  = 0;   // Disable analog
+        TRISBbits.TRISB3  = 0;  //set as output
+        LATBbits.LATB3 = 0; //initially off
         
         
         //IOCON1bits.P //set to output pin pwm1H
