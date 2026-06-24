@@ -39,7 +39,6 @@ void UART_Init(){
     U1MODEbits.PDSEL = 0b00;
     U1MODEbits.BRGH = 0;              // Standard-Speed mode or 1 for high speed 4 clocks per bit period, otherwise 16
     U1MODEbits.ABAUD=0; //disable auto baud rate-- opration at 9600data/s
-    
     //status control register
     U1STAbits.UTXISEL0=0;
     U1STAbits.UTXISEL1=0; //<0:1> so turn all of them off.
@@ -57,6 +56,10 @@ void UART_Init(){
     U1STAbits.URXISEL = 0; //FIRE RESPONSE THROUGH TX WHEN RX RECEIVES (like acknowledge hey i got the message)      
     //U1STAbits.TRMT=1;
    // CNPUDbits.CNPUD9 = 1;   //PU
+    
+    //LED 
+    
+    
     U1MODEbits.UARTEN = 1; //enable UART AND EXIT
     U1STAbits.UTXEN = 1; //enable transmit
     //U1TXREG = 0xAA;
@@ -179,10 +182,12 @@ void __attribute__((interrupt, no_auto_psv)) _U1RXInterrupt(void) {
         switch(cmd) {
             case 0x02:          // STOP
                 PTCONbits.PTEN = 0;
+                LATBbits.LATB2 = 1;
                 break;
 
             case 0x03:          // MODE 1, simple pwm (mostly for testing purposes)
                 {
+                    LATBbits.LATB2 = 0;
                     uint16_t freq_khz = ((uint16_t)rx_buf[4] << 8)
                                          | rx_buf[5];
                     new_freq = (uint32_t)freq_khz * 1000UL;
@@ -193,6 +198,7 @@ void __attribute__((interrupt, no_auto_psv)) _U1RXInterrupt(void) {
 
             case 0x04:          // MODE 2, DC-ZVS (for buck/boost aswell.)
                 {
+                    LATBbits.LATB2 = 0;
                     uint16_t freq_khz = ((uint16_t)rx_buf[4] << 8)
                                          | rx_buf[5];
                     new_freq  = (uint32_t)freq_khz * 1000UL;
@@ -202,7 +208,12 @@ void __attribute__((interrupt, no_auto_psv)) _U1RXInterrupt(void) {
                     pwm_mode2_pending = 1;
                 }
                 break;
-
+            case 0x05:
+            {
+                LATBbits.LATB2 = 0;
+                rdson_pending    = 1;
+        }
+                break;
             default:
                 break;
         }

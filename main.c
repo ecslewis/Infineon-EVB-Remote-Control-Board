@@ -69,6 +69,9 @@
 #include "uart.h"
 #include <libpic30.h>
 
+
+uint16_t blink_counter =0;
+
 int main(void)
 {
     RCONbits.SWDTEN = 0;  // disable software WDT
@@ -103,6 +106,9 @@ while(1) {
     if(pwm_mode2_pending == 1) {
         PWM_Mode2(new_freq, new_duty, new_dt_ns);
         pwm_mode2_pending = 0;
+    }
+     if(rdson_cycle_done == 1) {
+        rdson_cycle_done = 0;
     }
 }
     return 0;

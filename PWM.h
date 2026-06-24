@@ -18,6 +18,10 @@ extern volatile uint16_t new_dt_ns;
 extern volatile uint8_t  pwm_update_pending;
 extern volatile uint8_t freq_update_pending;
 extern volatile uint8_t pwm_mode2_pending;
+extern volatile uint8_t  rdson_pending;
+extern volatile uint8_t  rdson_cycle_done;
+extern volatile uint32_t saved_freq;
+extern volatile uint8_t  saved_duty;
 // PWM Functions
 void PWM_Init(void);
 void Clock_Init(void);

@@ -13,6 +13,7 @@
 
 extern volatile uint16_t Uart_Fault_CNT;
 
+
 //static uint8_t baudrate;
 //static uint8_t rx_buf[3];
 //extern volatile uint8_t pwm_update_pending;

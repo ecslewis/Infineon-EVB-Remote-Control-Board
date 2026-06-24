@@ -11,21 +11,69 @@ extern volatile uint8_t  new_duty           = DEFAULT_DUTY;
 volatile uint8_t  pwm_update_pending = 0;
 volatile uint8_t freq_update_pending = 0;
 volatile uint8_t pwm_mode2_pending =0;
+volatile uint8_t  rdson_pending    = 0;
+volatile uint8_t  rdson_cycle_done = 0;
+volatile uint32_t saved_freq       = 0;
+volatile uint8_t  saved_duty       = 0;
 
 // globals
 static uint32_t current_freq = DEFAULT_FREQ;
 static uint8_t  current_duty = DEFAULT_DUTY;
 
-void __attribute__((interrupt, no_auto_psv)) _PWMSpEventMatchInterrupt(void)
+void __attribute__((interrupt, no_auto_psv))
+_PWMSpEventMatchInterrupt(void)
 {
-    //Nop();
-    IFS3bits.PSEMIF = 0;      //clear interrupt flag so the rest can process
+    IFS3bits.PSEMIF = 0;
 
-//    if (pwm_update_pending == 1) //active request
-//    {
-//        pwm_update_pending = 0; //clear active pwm request
-//        //PWM_Update(new_freq, new_duty); //update as requested
-//    }
+    static uint8_t rdson_state = 0;
+
+    switch(rdson_state) {
+        case 0:                     // Normal operation -> go to 50kHz for 1 cycle
+            if(rdson_pending == 1) {
+                rdson_pending = 0;
+
+                // Save current settings
+                saved_freq = new_freq;
+                saved_duty = new_duty;
+
+                // Switch to 50kHz
+                uint16_t period  = (uint16_t)((FPWM / 50000UL) - 1);
+                uint16_t compare = (uint16_t)((uint32_t)period
+                                    * saved_duty / 100);
+                PTCONbits.PTEN   = 0;
+                PTPER            = period;
+                PHASE1           = period;
+                PHASE2           = period;
+                MDC              = compare;
+                PDC1             = compare;
+                PDC2             = compare;
+                PTCONbits.PTEN   = 1;
+
+                rdson_state      = 1;
+            }
+            break;
+
+        case 1:                     // 50kHz cycle done, go back to normal now
+            {
+                LATBbits.LATB2 = 1;
+                // restor old frequency
+                uint16_t period  = (uint16_t)((FPWM / saved_freq) - 1);
+                uint16_t compare = (uint16_t)((uint32_t)period
+                                    * saved_duty / 100);
+                PTCONbits.PTEN   = 0;
+                PTPER            = period;
+                PHASE1           = period;
+                PHASE2           = period;
+                MDC              = compare;
+                PDC1             = compare;
+                PDC2             = compare;
+                PTCONbits.PTEN   = 1;
+
+                rdson_cycle_done = 1;
+                rdson_state      = 0;
+            }
+            break;
+    }
 }
 
 void Clock_Init(void) 
@@ -66,6 +114,8 @@ void IO_Init(void)
         TRISAbits.TRISA3=0;
         TRISBbits.TRISB13=0;
         TRISBbits.TRISB14=0;
+        TRISBbits.TRISB2  = 0;  //set as output
+        LATBbits.LATB2 = 1;
         
         
         //IOCON1bits.P //set to output pin pwm1H
@@ -164,6 +214,14 @@ void PWM_Update(uint32_t freq, uint8_t duty)
     PDC1                = compare;
     PDC2                = compare;
 
+       //INTERRUPT ENABLE
+    SEVTCMP            = 1;
+    PTCONbits.SEIEN    = 1;
+    IFS3bits.PSEMIF    = 0;
+    IEC3bits.PSEMIE    = 1;
+    IPC14bits.PSEMIP   = 4;
+    
+    //PWM ENABLE
     PTCONbits.PTEN      = 1;   
 }
 
@@ -202,6 +260,17 @@ void PWM_Mode2(uint32_t freq, uint8_t duty, uint16_t dt_ns)
     IOCON2bits.OVRENH = 1;    // Override hsS
     IOCON2bits.OVRENL = 1;    // Override hsS
     FCLCON2bits.FLTMOD = 0b11;
+    
+    
+    //INTERRUPT ENABLE
+    SEVTCMP            = 1;
+    PTCONbits.SEIEN    = 1;
+    IFS3bits.PSEMIF    = 0;
+    IEC3bits.PSEMIE    = 1;
+    IPC14bits.PSEMIP   = 4;
+    
+    
+    //enable PWM
     PTCONbits.PTEN    = 1;    // RE-enable PWM sgn
 }
 
