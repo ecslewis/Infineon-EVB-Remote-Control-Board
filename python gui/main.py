@@ -7,136 +7,181 @@ class App:
     def __init__(self, root):
         self.ctrl = RS485Controller()
         self.root = root
-        self.root.title("PWM Control")
-        self.root.geometry("380x680")
-        self.root.configure(bg="#F5EFE6")
+        self.root.title("BDS PWM Controller  ·  Infineon")
+        self.root.geometry("420x820")
+        self.root.configure(bg="#FFFFFF")
         self.root.resizable(False, False)
+
         # ──────────────────────────────────────────
-        # COLORS
+        # INFINEON COLORS
         # ──────────────────────────────────────────
-        self.BG      = "#F5EFE6"
-        self.CARD    = "#FFFFFF"
-        self.ACCENT1 = "#C9B8A8"
-        self.ACCENT2 = "#A0856C"
-        self.DARK    = "#5C4033"
-        self.TEXT    = "#3E2723"
-        self.SUBTEXT = "#A0856C"
-        self.GREEN   = "#8DAF8A"
-        self.RED     = "#C4786A"
-        self.PURPLE  = "#9B8AB4"
+        self.BG        = "#FFFFFF"   # White
+        self.SIDEBAR   = "#009B77"   # Infineon green
+        self.CARD      = "#F4F4F4"   # Light grey card
+        self.ACCENT    = "#009B77"   # Infineon green
+        self.DARK      = "#009B77"   # Near black
+        self.TEXT      = "#1A1A1A"   # Dark text
+        self.SUBTEXT   = "#6B6B6B"   # Grey text
+        self.GREEN     = "#009B77"   # Infineon green
+        self.RED       = "#E3000F"   # Infineon red
+        self.PURPLE    = "#009B77"   # Infineon purple
+        self.BLUE      = "#0066CC"   # Infineon blue
+        self.ORANGE    = "#009B77"   # Infineon orange
+        self.LINE      = "#E0E0E0"   # Divider
+
         # ──────────────────────────────────────────
         # FONTS
         # ──────────────────────────────────────────
-        self.f_title = tkfont.Font(family="Helvetica", size=16, weight="bold")
-        self.f_sub   = tkfont.Font(family="Helvetica", size=9)
-        self.f_label = tkfont.Font(family="Helvetica", size=9,  weight="bold")
-        self.f_entry = tkfont.Font(family="Helvetica", size=13)
-        self.f_btn   = tkfont.Font(family="Helvetica", size=10, weight="bold")
+        self.f_title   = tkfont.Font(family="Helvetica", size=14, weight="bold")
+        self.f_sub     = tkfont.Font(family="Helvetica", size=8)
+        self.f_label   = tkfont.Font(family="Helvetica", size=8,  weight="bold")
+        self.f_entry   = tkfont.Font(family="Helvetica", size=12)
+        self.f_btn     = tkfont.Font(family="Helvetica", size=9,  weight="bold")
+        self.f_tiny    = tkfont.Font(family="Helvetica", size=7)
+        self.f_version = tkfont.Font(family="Helvetica", size=8)
+
         # ──────────────────────────────────────────
-        # BACKGROUND BLOBS
+        # TOP BAR - Infineon green header
         # ──────────────────────────────────────────
-        canvas = tk.Canvas(
-            root,
-            width              = 380,
-            height             = 680,
-            bg                 = self.BG,
-            highlightthickness = 0
-        )
-        canvas.place(x=0, y=0)
-        canvas.create_oval(-40, -40, 160, 160, fill="#E8DCCC", outline="")
-        canvas.create_oval(260, 460, 430, 680, fill="#E8DCCC", outline="")
-        canvas.create_oval(300, -20, 420, 100, fill="#D9C8B4", outline="")
+        header = tk.Frame(root, bg=self.SIDEBAR, height=56)
+        header.pack(fill="x")
+        header.pack_propagate(False)
+
+        tk.Label(
+            header,
+            text   = "BDS PWM Controller",
+            font   = self.f_title,
+            bg     = self.SIDEBAR,
+            fg     = "#FFFFFF"
+        ).pack(side=tk.LEFT, padx=20, pady=15)
+
+        tk.Label(
+            header,
+            text   = "dsPIC33EP32GS502",
+            font   = self.f_version,
+            bg     = self.SIDEBAR,
+            fg     = "#CCECE6"
+        ).pack(side=tk.RIGHT, padx=20)
+
         # ──────────────────────────────────────────
-        # CONTAINER
+        # MAIN CONTAINER
         # ──────────────────────────────────────────
         c = tk.Frame(root, bg=self.BG)
-        c.place(x=30, y=0, width=320, height=680)
+        c.pack(fill="both", expand=True, padx=24, pady=16)
+
         # ──────────────────────────────────────────
-        # HEADER
+        # CONNECTION ROW
+        # ──────────────────────────────────────────
+        conn_frame = tk.Frame(c, bg=self.BG)
+        conn_frame.pack(fill="x", pady=(0, 16))
+
+        tk.Label(
+            conn_frame,
+            text   = "INTERFACE",
+            font   = self.f_label,
+            bg     = self.BG,
+            fg     = self.SUBTEXT
+        ).pack(anchor="w")
+
+        conn_row = tk.Frame(conn_frame, bg=self.BG)
+        conn_row.pack(fill="x", pady=(4, 0))
+
+        self.port_label = tk.Label(
+            conn_row,
+            text   = "COM5  ·  RS485  ·  9600 baud",
+            font   = self.f_version,
+            bg     = self.CARD,
+            fg     = self.SUBTEXT,
+            padx   = 12,
+            pady   = 8
+        )
+        self.port_label.pack(side=tk.LEFT, expand=True, fill="x", padx=(0, 8))
+
+        self.btn_connect = tk.Button(
+            conn_row,
+            text             = "Connect",
+            font             = self.f_btn,
+            bg               = self.ACCENT,
+            fg               = "#FFFFFF",
+            activebackground = "#007A5E",
+            activeforeground = "#FFFFFF",
+            bd               = 0,
+            relief           = "flat",
+            cursor           = "hand2",
+            padx             = 16,
+            pady             = 8,
+            command          = self.connect
+        )
+        self.btn_connect.pack(side=tk.RIGHT)
+
+        # ──────────────────────────────────────────
+        # DIVIDER
+        # ──────────────────────────────────────────
+        tk.Frame(c, bg=self.LINE, height=1).pack(fill="x", pady=8)
+
+        # ──────────────────────────────────────────
+        # PARAMETERS SECTION
         # ──────────────────────────────────────────
         tk.Label(
-            c, text="PWM Control",
-            font=self.f_title,
-            bg=self.BG, fg=self.TEXT
-        ).pack(pady=(35, 2))
-        tk.Label(
-            c, text="dsPIC33EP128GS808  ·  RS485",
-            font=self.f_sub,
-            bg=self.BG, fg=self.SUBTEXT
-        ).pack(pady=(0, 15))
-        # ──────────────────────────────────────────
-        # INPUT CARD
-        # ──────────────────────────────────────────
-        card = tk.Frame(
+            c,
+            text   = "PARAMETERS",
+            font   = self.f_label,
+            bg     = self.BG,
+            fg     = self.SUBTEXT
+        ).pack(anchor="w", pady=(8, 8))
+
+        param_card = tk.Frame(
             c, bg=self.CARD,
-            highlightbackground="#E8DCCC",
-            highlightthickness=1
+            highlightbackground = self.LINE,
+            highlightthickness  = 1
         )
-        card.pack(fill="x", pady=5)
-        # Frequency
-        fr = tk.Frame(card, bg=self.CARD)
-        fr.pack(fill="x", padx=20, pady=(15, 2))
-        tk.Label(fr, text="FREQUENCY", font=self.f_label,
-                 bg=self.CARD, fg=self.SUBTEXT).pack(side=tk.LEFT)
-        tk.Label(fr, text="kHz", font=self.f_sub,
-                 bg=self.CARD, fg=self.ACCENT1).pack(side=tk.RIGHT)
-        self.freq_entry = tk.Entry(
-            card, font=self.f_entry, bd=0,
-            bg="#FAF6F1", fg=self.TEXT,
-            insertbackground=self.TEXT,
-            relief="flat", state="disabled", justify="center"
-        )
-        self.freq_entry.pack(fill="x", padx=20, ipady=8, pady=(0,5))
-        tk.Frame(card, bg="#F0EAE0", height=1).pack(fill="x", padx=20, pady=5)
-        # Duty
-        dr = tk.Frame(card, bg=self.CARD)
-        dr.pack(fill="x", padx=20, pady=(8, 2))
-        tk.Label(dr, text="DUTY CYCLE", font=self.f_label,
-                 bg=self.CARD, fg=self.SUBTEXT).pack(side=tk.LEFT)
-        tk.Label(dr, text="%", font=self.f_sub,
-                 bg=self.CARD, fg=self.ACCENT1).pack(side=tk.RIGHT)
-        self.duty_entry = tk.Entry(
-            card, font=self.f_entry, bd=0,
-            bg="#FAF6F1", fg=self.TEXT,
-            insertbackground=self.TEXT,
-            relief="flat", state="disabled", justify="center"
-        )
-        self.duty_entry.pack(fill="x", padx=20, ipady=8, pady=(0,5))
+        param_card.pack(fill="x")
+
+        # Frequency row
+        self._param_row(param_card, "Frequency", "kHz", first=True)
+        self.freq_entry = self._param_entry(param_card)
+
+        tk.Frame(param_card, bg=self.LINE, height=1).pack(fill="x", padx=16)
+
+        # Duty row
+        self._param_row(param_card, "Duty Cycle", "%")
+        self.duty_entry = self._param_entry(param_card)
         self.duty_entry.insert(0, "50")
-        tk.Frame(card, bg="#F0EAE0", height=1).pack(fill="x", padx=20, pady=5)
-        # Dead-time
-        dtr = tk.Frame(card, bg=self.CARD)
-        dtr.pack(fill="x", padx=20, pady=(8, 2))
-        tk.Label(dtr, text="DEAD-TIME", font=self.f_label,
-                 bg=self.CARD, fg=self.SUBTEXT).pack(side=tk.LEFT)
-        tk.Label(dtr, text="ns", font=self.f_sub,
-                 bg=self.CARD, fg=self.ACCENT1).pack(side=tk.RIGHT)
-        self.dt_entry = tk.Entry(
-            card, font=self.f_entry, bd=0,
-            bg="#FAF6F1", fg=self.TEXT,
-            insertbackground=self.TEXT,
-            relief="flat", state="disabled", justify="center"
-        )
-        self.dt_entry.pack(fill="x", padx=20, ipady=8, pady=(0,15))
+
+        tk.Frame(param_card, bg=self.LINE, height=1).pack(fill="x", padx=16)
+
+        # Dead time row
+        self._param_row(param_card, "Dead-Time", "ns")
+        self.dt_entry = self._param_entry(param_card, last=True)
         self.dt_entry.insert(0, "100")
+
         # ──────────────────────────────────────────
-        # MODE BUTTONS
+        # DIVIDER
+        # ──────────────────────────────────────────
+        tk.Frame(c, bg=self.LINE, height=1).pack(fill="x", pady=16)
+
+        # ──────────────────────────────────────────
+        # OPERATION MODE
         # ──────────────────────────────────────────
         tk.Label(
-            c, text="SELECT MODE",
-            font=self.f_label,
-            bg=self.BG, fg=self.SUBTEXT
-        ).pack(anchor="w", pady=(10, 4))
+            c,
+            text   = "OPERATION MODE",
+            font   = self.f_label,
+            bg     = self.BG,
+            fg     = self.SUBTEXT
+        ).pack(anchor="w", pady=(0, 8))
+
         mode_row = tk.Frame(c, bg=self.BG)
-        mode_row.pack(fill="x", pady=2)
+        mode_row.pack(fill="x", pady=(0, 8))
+
         self.btn_mode1 = tk.Button(
             mode_row,
-            text             = "Mode 1\nBoth Channels",
+            text             = "Mode 1\nComplementary PWM",
             font             = self.f_btn,
             bg               = self.DARK,
-            fg               = "#FAF6F1",
-            activebackground = self.ACCENT2,
-            activeforeground = "#FAF6F1",
+            fg               = "#FFFFFF",
+            activebackground = "#FFFFFF",
+            activeforeground = "#FFFFFF",
             bd               = 0,
             relief           = "flat",
             cursor           = "hand2",
@@ -144,19 +189,17 @@ class App:
             command          = self.start_mode1
         )
         self.btn_mode1.pack(
-            side   = tk.LEFT,
-            expand = True,
-            fill   = "x",
-            ipady  = 14,
-            padx   = (0, 5)
+            side=tk.LEFT, expand=True,
+            fill="x", ipady=12, padx=(0, 6)
         )
+
         self.btn_mode2 = tk.Button(
             mode_row,
-            text             = "Mode 2\nZVS Control",
+            text             = "Mode 2\nDC-ZVS Control",
             font             = self.f_btn,
             bg               = self.PURPLE,
             fg               = "#FFFFFF",
-            activebackground = "#8A79A3",
+            activebackground = "#5A3A8A",
             activeforeground = "#FFFFFF",
             bd               = 0,
             relief           = "flat",
@@ -165,22 +208,55 @@ class App:
             command          = self.start_mode2
         )
         self.btn_mode2.pack(
-            side   = tk.RIGHT,
-            expand = True,
-            fill   = "x",
-            ipady  = 14,
-            padx   = (5, 0)
+            side=tk.RIGHT, expand=True,
+            fill="x", ipady=12, padx=(6, 0)
         )
+
         # ──────────────────────────────────────────
-        # STOP BUTTON
+        # DIVIDER
         # ──────────────────────────────────────────
-        self.btn_stop = tk.Button(
+        tk.Frame(c, bg=self.LINE, height=1).pack(fill="x", pady=8)
+
+        # ──────────────────────────────────────────
+        # ACTIONS
+        # ──────────────────────────────────────────
+        tk.Label(
             c,
-            text             = "■  STOP",
+            text   = "ACTIONS",
+            font   = self.f_label,
+            bg     = self.BG,
+            fg     = self.SUBTEXT
+        ).pack(anchor="w", pady=(0, 8))
+
+        action_row = tk.Frame(c, bg=self.BG)
+        action_row.pack(fill="x", pady=(0, 8))
+
+        self.btn_rdson = tk.Button(
+            action_row,
+            text             = "⚡  Measure Rdson",
+            font             = self.f_btn,
+            bg               = self.ORANGE,
+            fg               = "#FFFFFF",
+            activebackground = "#C06400",
+            activeforeground = "#FFFFFF",
+            bd               = 0,
+            relief           = "flat",
+            cursor           = "hand2",
+            state            = "disabled",
+            command          = self.measure_rdson
+        )
+        self.btn_rdson.pack(
+            side=tk.LEFT, expand=True,
+            fill="x", ipady=12, padx=(0, 6)
+        )
+
+        self.btn_stop = tk.Button(
+            action_row,
+            text             = "■  Emergency Stop",
             font             = self.f_btn,
             bg               = self.RED,
             fg               = "#FFFFFF",
-            activebackground = "#B06B5E",
+            activebackground = "#B0000C",
             activeforeground = "#FFFFFF",
             bd               = 0,
             relief           = "flat",
@@ -188,86 +264,125 @@ class App:
             state            = "disabled",
             command          = self.pwm_stop
         )
-        self.btn_stop.pack(fill="x", pady=10, ipady=12)
-        # ──────────────────────────────────────────
-        # CONNECT BUTTON
-        # ──────────────────────────────────────────
-        self.btn_connect = tk.Button(
-            c,
-            text             = "Connect",
-            font             = self.f_btn,
-            bg               = self.ACCENT1,
-            fg               = "#FFFFFF",
-            activebackground = self.ACCENT2,
-            activeforeground = "#FFFFFF",
-            bd               = 0,
-            relief           = "flat",
-            cursor           = "hand2",
-            command          = self.connect
+        self.btn_stop.pack(
+            side=tk.RIGHT, expand=True,
+            fill="x", ipady=12, padx=(6, 0)
         )
-        self.btn_connect.pack(fill="x", pady=5, ipady=12)
+
         # ──────────────────────────────────────────
-        # STATUS
+        # STATUS BAR
         # ──────────────────────────────────────────
+        tk.Frame(c, bg=self.LINE, height=1).pack(fill="x", pady=8)
+
+        status_row = tk.Frame(c, bg=self.BG)
+        status_row.pack(fill="x")
+
+        tk.Label(
+            status_row,
+            text   = "STATUS",
+            font   = self.f_label,
+            bg     = self.BG,
+            fg     = self.SUBTEXT
+        ).pack(side=tk.LEFT)
+
         self.status = tk.Label(
-            c,
-            text  = "⚪  Not connected",
-            font  = self.f_sub,
-            bg    = "#EDE4D8",
-            fg    = self.SUBTEXT,
-            padx  = 15,
-            pady  = 6
+            status_row,
+            text   = "Not connected",
+            font   = self.f_version,
+            bg     = self.BG,
+            fg     = self.SUBTEXT
         )
-        self.status.pack(pady=8)
+        self.status.pack(side=tk.RIGHT)
+
+        # ──────────────────────────────────────────
+        # FOOTER
+        # ──────────────────────────────────────────
+        footer = tk.Frame(root, bg=self.CARD, height=32)
+        footer.pack(fill="x", side=tk.BOTTOM)
+        footer.pack_propagate(False)
+
+        tk.Label(
+            footer,
+            text   = "Infineon Technologies  ·  BDS Control System  ·  v1.0",
+            font   = self.f_tiny,
+            bg     = self.CARD,
+            fg     = self.SUBTEXT
+        ).pack(side=tk.LEFT, padx=16, pady=8)
+
+        tk.Label(
+            footer,
+            text   = "© 2026",
+            font   = self.f_tiny,
+            bg     = self.CARD,
+            fg     = self.SUBTEXT
+        ).pack(side=tk.RIGHT, padx=16)
+
     # ──────────────────────────────────────────
-    # HELPERS
+    # UI HELPERS
     # ──────────────────────────────────────────
-    def _get_freq_duty(self):
-        try:
-            freq = int(self.freq_entry.get())
-            duty = int(self.duty_entry.get())
-            if not (1 <= freq <= 500):
-                self.status.config(
-                    text = "🔴  Freq: 1 – 500 kHz",
-                    fg   = self.RED
-                )
-                return None, None
-            if not (0 <= duty <= 100):
-                self.status.config(
-                    text = "🔴  Duty: 0 – 100 %",
-                    fg   = self.RED
-                )
-                return None, None
-            return freq, duty
-        except ValueError:
-            self.status.config(
-                text = "🔴  Enter valid numbers",
-                fg   = self.RED
-            )
-            return None, None
+    def _param_row(self, parent, label, unit, first=False):
+        row = tk.Frame(parent, bg=self.CARD)
+        row.pack(fill="x", padx=16,
+                 pady=(12 if first else 8, 2))
+        tk.Label(
+            row, text=label.upper(),
+            font=self.f_label,
+            bg=self.CARD, fg=self.SUBTEXT
+        ).pack(side=tk.LEFT)
+        tk.Label(
+            row, text=unit,
+            font=self.f_tiny,
+            bg=self.CARD, fg=self.ACCENT
+        ).pack(side=tk.RIGHT)
+
+    def _param_entry(self, parent, last=False):
+        entry = tk.Entry(
+            parent,
+            font             = self.f_entry,
+            bd               = 0,
+            bg               = self.CARD,
+            fg               = self.TEXT,
+            insertbackground = self.TEXT,
+            relief           = "flat",
+            state            = "disabled",
+            justify          = "left"
+        )
+        entry.pack(
+            fill  = "x",
+            padx  = 16,
+            ipady = 6,
+            pady  = (0, 12 if last else 4)
+        )
+        return entry
 
     def _enable_controls(self):
-        self.freq_entry.config(state  = "normal")
-        self.duty_entry.config(state  = "normal")
-        self.dt_entry.config(state    = "normal")
-        self.btn_mode1.config(state   = "normal")
-        self.btn_mode2.config(state   = "normal")
-        self.btn_stop.config(state    = "normal")
+        self.freq_entry.config(state = "normal")
+        self.duty_entry.config(state = "normal")
+        self.dt_entry.config(state   = "normal")
+        self.btn_mode1.config(state  = "normal")
+        self.btn_mode2.config(state  = "normal")
+        self.btn_stop.config(state   = "normal")
+        self.btn_rdson.config(state  = "normal")
 
     def _disable_controls(self):
-        self.freq_entry.config(state  = "disabled")
-        self.duty_entry.config(state  = "disabled")
-        self.dt_entry.config(state    = "disabled")
-        self.btn_mode1.config(state   = "disabled")
-        self.btn_mode2.config(state   = "disabled")
-        self.btn_stop.config(state    = "disabled")
+        self.freq_entry.config(state = "disabled")
+        self.duty_entry.config(state = "disabled")
+        self.dt_entry.config(state   = "disabled")
+        self.btn_mode1.config(state  = "disabled")
+        self.btn_mode2.config(state  = "disabled")
+        self.btn_stop.config(state   = "disabled")
+        self.btn_rdson.config(state  = "disabled")
+
     # ──────────────────────────────────────────
     # METHODS
     # ──────────────────────────────────────────
     def connect(self):
         if self.ctrl.connect("COM5", baudrate=9600):
             self.status.config(
-                text = "🟢  Connected  ·  COM5",
+                text = "Connected  ·  COM5  ·  9600 baud",
+                fg   = self.GREEN
+            )
+            self.port_label.config(
                 fg   = self.GREEN
             )
             self._enable_controls()
@@ -278,7 +393,7 @@ class App:
             )
         else:
             self.status.config(
-                text = "🔴  Connection failed",
+                text = "Connection failed",
                 fg   = self.RED
             )
 
@@ -286,14 +401,39 @@ class App:
         self.ctrl.disconnect()
         self._disable_controls()
         self.status.config(
-            text = "⚪  Not connected",
+            text = "Disconnected",
             fg   = self.SUBTEXT
         )
+        self.port_label.config(fg=self.SUBTEXT)
         self.btn_connect.config(
             text    = "Connect",
-            bg      = self.ACCENT1,
+            bg      = self.ACCENT,
             command = self.connect
         )
+
+    def _get_freq_duty(self):
+        try:
+            freq = int(self.freq_entry.get())
+            duty = int(self.duty_entry.get())
+            if not (1 <= freq <= 500):
+                self.status.config(
+                    text = "Error: Frequency must be 1 – 500 kHz",
+                    fg   = self.RED
+                )
+                return None, None
+            if not (0 <= duty <= 100):
+                self.status.config(
+                    text = "Error: Duty cycle must be 0 – 100 %",
+                    fg   = self.RED
+                )
+                return None, None
+            return freq, duty
+        except ValueError:
+            self.status.config(
+                text = "Error: Enter valid numbers",
+                fg   = self.RED
+            )
+            return None, None
 
     def start_mode1(self):
         freq, duty = self._get_freq_duty()
@@ -301,12 +441,12 @@ class App:
             return
         if self.ctrl.pwm_mode1(freq, duty):
             self.status.config(
-                text = f"🟢  Mode 1  ·  {freq} kHz  ·  {duty}%",
+                text = f"Mode 1 active  ·  {freq} kHz  ·  {duty}% duty",
                 fg   = self.GREEN
             )
         else:
             self.status.config(
-                text = "🔴  Send failed",
+                text = "Error: Transmission failed",
                 fg   = self.RED
             )
 
@@ -318,36 +458,48 @@ class App:
             dt = int(self.dt_entry.get())
             if not (0 <= dt <= 500):
                 self.status.config(
-                    text = "🔴  Dead-time: 0 – 500 ns",
+                    text = "Error: Dead-time must be 0 – 500 ns",
                     fg   = self.RED
                 )
                 return
         except ValueError:
             self.status.config(
-                text = "🔴  Enter valid dead-time",
+                text = "Error: Enter valid dead-time",
                 fg   = self.RED
             )
             return
         if self.ctrl.pwm_mode2(freq, duty, dt):
             self.status.config(
-                text = f"🟣  Mode 2  ·  {freq} kHz  ·  {duty}%  ·  {dt}ns DT",
+                text = f"Mode 2 active  ·  {freq} kHz  ·  {duty}%  ·  {dt} ns DT",
                 fg   = self.PURPLE
             )
         else:
             self.status.config(
-                text = "🔴  Send failed",
+                text = "Error: Transmission failed",
                 fg   = self.RED
             )
 
     def pwm_stop(self):
         if self.ctrl.pwm_stop():
             self.status.config(
-                text = "⚪  PWM Stopped",
+                text = "PWM stopped",
                 fg   = self.SUBTEXT
             )
         else:
             self.status.config(
-                text = "🔴  Send failed",
+                text = "Error: Transmission failed",
+                fg   = self.RED
+            )
+
+    def measure_rdson(self):
+        if self.ctrl.measure_rdson():
+            self.status.config(
+                text = "Rdson measurement triggered  ·  50 kHz single cycle",
+                fg   = self.ORANGE
+            )
+        else:
+            self.status.config(
+                text = "Error: Transmission failed",
                 fg   = self.RED
             )
 
