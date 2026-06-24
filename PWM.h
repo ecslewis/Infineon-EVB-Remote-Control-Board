@@ -8,6 +8,7 @@
 #define FPWM            117920000UL
 #define DEFAULT_FREQ    100000UL          // 200kHz
 #define DEFAULT_DUTY    50
+#define FCY          39613750UL
 
 /*============================================================
  * EXTERN VARIABLES
@@ -22,11 +23,13 @@ extern volatile uint8_t  rdson_pending;
 extern volatile uint8_t  rdson_cycle_done;
 extern volatile uint32_t saved_freq;
 extern volatile uint8_t  saved_duty;
+extern volatile uint8_t led_blink;
 // PWM Functions
 void PWM_Init(void);
 void Clock_Init(void);
 void IO_Init(void);
 void PWM_Update(uint32_t freq, uint8_t duty);
 void PWM_Mode2(uint32_t freq, uint8_t duty, uint16_t dt_ns);
+void Timer1_Init(void);
 
 #endif 

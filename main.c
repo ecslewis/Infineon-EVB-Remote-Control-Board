@@ -83,6 +83,7 @@ int main(void)
    Clock_Init();
     IO_Init();
     UART_Init(); //no communication for now
+    Timer1_Init();
     //__delay_ms(10);
     //UART_SendByte(0xAA);  // send 0xAA continuously
     //PWM_Init(); //only enable the PWM signalsfrom the board
@@ -109,6 +110,7 @@ while(1) {
     }
      if(rdson_cycle_done == 1) {
         rdson_cycle_done = 0;
+        //led_blink        = 0;   // Stop blinking
     }
 }
     return 0;

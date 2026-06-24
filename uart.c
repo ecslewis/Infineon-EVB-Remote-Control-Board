@@ -181,6 +181,7 @@ void __attribute__((interrupt, no_auto_psv)) _U1RXInterrupt(void) {
 
         switch(cmd) {
             case 0x02:          // STOP
+                led_blink        = 0;
                 PTCONbits.PTEN = 0;
                 LATBbits.LATB2 = 1;
                 LATBbits.LATB3 = 0;
@@ -189,6 +190,7 @@ void __attribute__((interrupt, no_auto_psv)) _U1RXInterrupt(void) {
             case 0x03:          // MODE 1, simple pwm (mostly for testing purposes)
                 {
                     LATBbits.LATB2 = 0;
+                    led_blink        = 1;
                     uint16_t freq_khz = ((uint16_t)rx_buf[4] << 8)
                                          | rx_buf[5];
                     new_freq = (uint32_t)freq_khz * 1000UL;
@@ -200,6 +202,7 @@ void __attribute__((interrupt, no_auto_psv)) _U1RXInterrupt(void) {
             case 0x04:          // MODE 2, DC-ZVS (for buck/boost aswell.)
                 {
                     LATBbits.LATB2 = 0;
+                    led_blink        = 1;
                     uint16_t freq_khz = ((uint16_t)rx_buf[4] << 8)
                                          | rx_buf[5];
                     new_freq  = (uint32_t)freq_khz * 1000UL;
@@ -211,6 +214,7 @@ void __attribute__((interrupt, no_auto_psv)) _U1RXInterrupt(void) {
                 break;
             case 0x05:
             {
+                led_blink        = 1;
                 LATBbits.LATB2 = 0;
                 rdson_pending    = 1;
         }

@@ -5,6 +5,7 @@
 #define FPWM            117920000UL
 #define DEFAULT_FREQ    100000UL          // 200kHz
 #define DEFAULT_DUTY    50UL
+#define FCY          39613750UL
 
 extern volatile uint32_t new_freq           = DEFAULT_FREQ;
 extern volatile uint8_t  new_duty           = DEFAULT_DUTY;
@@ -15,6 +16,7 @@ volatile uint8_t  rdson_pending    = 0;
 volatile uint8_t  rdson_cycle_done = 0;
 volatile uint32_t saved_freq       = 0;
 volatile uint8_t  saved_duty       = 0;
+volatile uint8_t led_blink = 0;
 
 // globals
 static uint32_t current_freq = DEFAULT_FREQ;
@@ -278,5 +280,31 @@ void PWM_Mode2(uint32_t freq, uint8_t duty, uint16_t dt_ns)
     PTCONbits.PTEN    = 1;    // RE-enable PWM sgn
 }
 
+//TIMER
+void Timer1_Init(void)
+{
+    T1CONbits.TON    = 0;
+    T1CONbits.TCS    = 0;     // Internal FCY
+    T1CONbits.TCKPS  = 0b11;  // 1:256 prescaler
+    TMR1             = 0;
+    PR1              = (uint16_t)(FCY / 256 / 2);
+                              // ? 500ms
 
+    IFS0bits.T1IF    = 0;
+    IEC0bits.T1IE    = 1;
+    IPC0bits.T1IP    = 3;     // Lower than UART(5) PWM(4)
+
+    T1CONbits.TON    = 1;
+}
+
+// Timer ISR
+void __attribute__((interrupt, no_auto_psv))
+_T1Interrupt(void)
+{
+    IFS0bits.T1IF = 0;
+
+    if(led_blink == 1) {
+        LATBbits.LATB2 ^= 1;  // Toggle LED
+    }
+}
 
