@@ -3,7 +3,7 @@
 
 //PWM DEFINE VARIABLES
 #define FPWM            117920000UL
-#define DEFAULT_FREQ    100000UL          // 200kHz
+#define DEFAULT_FREQ    100000UL          // 100kHz
 #define DEFAULT_DUTY    50UL
 #define FCY          39613750UL
 
@@ -37,20 +37,22 @@ _PWMSpEventMatchInterrupt(void)
                 // Save current settings
                 saved_freq = new_freq;
                 saved_duty = new_duty;
-
+                PWMCON1bits.IUE = 0;
                 // Switch to 50kHz
                 uint16_t period  = (uint16_t)((FPWM / 50000UL) - 1);
                 uint16_t compare = (uint16_t)((uint32_t)period
                                     * saved_duty / 100);
-                PTCONbits.PTEN   = 0;
+                //PTCONbits.PTEN   = 0;
+                LATBbits.LATB3 = 1; //turn on LED
                 PTPER            = period;
                 PHASE1           = period;
                 PHASE2           = period;
                 MDC              = compare;
                 PDC1             = compare;
                 PDC2             = compare;
-                PTCONbits.PTEN   = 1;
-
+                //PTCONbits.PTEN   = 1;
+                SEVTCMP         = period - 5;
+                LATBbits.LATB3 = 1; //turn on LED
                 rdson_state      = 1;
             }
             break;
@@ -58,18 +60,21 @@ _PWMSpEventMatchInterrupt(void)
         case 1:                     // 50kHz cycle done, go back to normal now
             {
                 // restor old frequency
-                LATBbits.LATB3 = 1;
+                PWMCON1bits.IUE = 0;
                 uint16_t period  = (uint16_t)((FPWM / saved_freq) - 1);
                 uint16_t compare = (uint16_t)((uint32_t)period
                                     * saved_duty / 100);
-                PTCONbits.PTEN   = 0;
+                //PTCONbits.PTEN   = 0;
+                
                 PTPER            = period;
                 PHASE1           = period;
                 PHASE2           = period;
                 MDC              = compare;
                 PDC1             = compare;
                 PDC2             = compare;
-                PTCONbits.PTEN   = 1;
+                 SEVTCMP          = 1;
+                 LATBbits.LATB3 = 0; //turn off LED
+                //PTCONbits.PTEN   = 1;
 
                 rdson_cycle_done = 1;
                 rdson_state      = 0;
