@@ -1,6 +1,8 @@
-# Infineon-EVB-Remote-Control-Board
+# Infineon EVB Remote Control Board
 Infineon 900V EVB Control firmware
 features ACZVS, DCZVS and DyR platforms controlled by a remote GUI.
+
+# Key Parameters
 Comm: UART1, 9600b/s for stable comms,
 CRC implementation for noise immunity,
 PWM frequency, duty cycle, deadtime controls, 
