@@ -1,22 +1,28 @@
 #include "PWM.h"
 #include "xc.h"
-
+#define FCY          39613750UL
+#include <libpic30.h>
 //PWM DEFINE VARIABLES
 #define FPWM            117920000UL
 #define DEFAULT_FREQ    100000UL          // 100kHz
 #define DEFAULT_DUTY    50UL
-#define FCY          39613750UL
-
+//predefine
 extern volatile uint32_t new_freq           = DEFAULT_FREQ;
 extern volatile uint8_t  new_duty           = DEFAULT_DUTY;
+//flags
 volatile uint8_t  pwm_update_pending = 0;
 volatile uint8_t freq_update_pending = 0;
 volatile uint8_t pwm_mode2_pending =0;
 volatile uint8_t  rdson_pending    = 0;
+volatile uint8_t  dpt    = 0;
 volatile uint8_t  rdson_cycle_done = 0;
+volatile uint8_t led_blink = 0;
+//changing values
 volatile uint32_t saved_freq       = 0;
 volatile uint8_t  saved_duty       = 0;
-volatile uint8_t led_blink = 0;
+volatile uint32_t first_pulse =0;
+volatile uint32_t second_pulse =0;
+volatile uint32_t frwl =0;
 
 // globals
 static uint32_t current_freq = DEFAULT_FREQ;
@@ -114,6 +120,7 @@ void Clock_Init(void)
 
 void IO_Init(void)
 {
+        //PWM SIGNALS
         IOCON1bits.PENH     = 0;   
         IOCON1bits.PENL =0;
         IOCON2bits.PENH     = 0;   
@@ -122,6 +129,8 @@ void IO_Init(void)
         TRISAbits.TRISA3=0;
         TRISBbits.TRISB13=0;
         TRISBbits.TRISB14=0;
+        
+        //LED
         ANSELBbits.ANSB2  = 0;   // Disable analog
         TRISBbits.TRISB2  = 0;  //set as output
         LATBbits.LATB2 = 1;
@@ -130,7 +139,24 @@ void IO_Init(void)
         LATBbits.LATB3 = 0; //initially off
         
         
+        //RB11
+        //ANSELBbits.ANSB11 = 0;  // Disable analog on RB11
+        TRISBbits.TRISB11 = 0;  // Set RB11 as OUTPUT
+        LATBbits.LATB11   = 0;  
+    
+        //RB12
+       // ANSELBbits.ANSB12 = 0;  // Disable analog on RB12
+        TRISBbits.TRISB12 = 0;  // Set RB12 as OUTPUT
+        LATBbits.LATB12   = 0;  
+        
         //IOCON1bits.P //set to output pin pwm1H
+}
+void delay_us_var(uint32_t us)
+{
+    uint32_t i;
+    for(i = 0; i < us; i++) {
+        __delay_us(1);  // This one IS real!
+    }
 }
 void PWM_Init(void)
 {
@@ -308,9 +334,63 @@ void __attribute__((interrupt, no_auto_psv))
 _T1Interrupt(void)
 {
     IFS0bits.T1IF = 0;
-
+    
+    
+    //toggle led
     if(led_blink == 1) {
-        LATBbits.LATB2 ^= 1;  // Toggle LED
+        LATBbits.LATB2 ^= 1; 
     }
 }
-
+void double_pulse(uint32_t first_pulse, 
+                  uint32_t frwl, 
+                  uint32_t second_pulse){
+    //NOTE THESE PULSES ARE IN NANOSECONDS!!
+    //STOP PWM SIGNALS
+     PTCONbits.PTEN    = 0;  
+     //USE THIS KNOB FOR PRECISE OR NON PRECISE TIMING
+     uint8_t knob = 1;
+     
+     
+     //IF KNOB=0, PARAMETERS ARE IN NS, HIGH ACCURACY
+     if (knob==0){
+     //timing calculation
+     uint32_t firstp = (uint32_t)(first_pulse * 118UL / 1000UL);
+     uint32_t frwlp =  (uint32_t)(frwl * 118UL / 1000UL);
+     uint32_t secondp = (uint32_t)(second_pulse * 118UL / 1000UL);
+     uint32_t cnt = 0;
+     if(firstp == 0 || secondp == 0 || frwlp == 0) return;
+     //RB11= GH
+     //RB12= GL
+     //PULSE HIGH
+     //PULSE LOW
+     
+     //FREEWHEEL
+     while (cnt<firstp){
+         
+         ++cnt;
+        }
+     cnt = 0;
+     while (cnt<frwlp){
+         LATBbits.LATB12   = 0;  //TURN OFF LOW SIDE TO LET FREEWHEEL
+         ++cnt;
+        }
+     cnt=0;
+     while (cnt<secondp){  
+         ++cnt;
+        }
+     }
+     
+     
+     //IF KNOB=1, THIS IS IN MICROSECOND(US) ACCURACY
+     if (knob==1){
+     LATBbits.LATB12   = 0;
+     LATBbits.LATB11   = 1;
+     delay_us_var(first_pulse);
+     LATBbits.LATB11   = 0; //TURN OFF BEFORE TURNING ON GL TO AVOID SHOOT THROUGH
+     LATBbits.LATB12   = 1;
+     delay_us_var(frwl);
+     LATBbits.LATB12   = 0;
+     LATBbits.LATB11   = 1;
+     delay_us_var(second_pulse);
+     }
+}

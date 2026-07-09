@@ -108,6 +108,10 @@ while(1) {
         PWM_Mode2(new_freq, new_duty, new_dt_ns);
         pwm_mode2_pending = 0;
     }
+    if (dpt==1){
+        double_pulse(first_pulse,frwl,second_pulse);
+        dpt=0;
+    }
      if(rdson_cycle_done == 1) {
         rdson_cycle_done = 0;
         //led_blink        = 0;   // Stop blinking

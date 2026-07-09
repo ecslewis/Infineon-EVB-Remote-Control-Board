@@ -216,13 +216,27 @@ void __attribute__((interrupt, no_auto_psv)) _U1RXInterrupt(void) {
                 break;
             case 0x05:
             {
+                //indication
                 led_blink        = 1;
                 LATBbits.LATB2 = 0;
+                //set flag
                 rdson_pending    = 1;
-        }
-                break;
-            default:
-                break;
+            }
+            case 0x06: //dyRdson
+            {
+                //indication
+                LATBbits.LATB3 = 1; //turn on RED LED for dyRdson indication, no blink
+                LATBbits.LATB2 = 0;
+                
+                //THESE ARE INPUTTED IN NANOSECONDS!! OR ELSE CHANGE THE CODE, THEREFORE 100= 100NS =0.1US. TO GET 10US =10000
+             //CHANGE THIS-->   // store message variables
+                first_pulse=0;
+                frwl=0;
+                second_pulse=0;
+                //set a flag
+                dpt=1;
+                
+            }
         }
 
         rx_in_process = 0;
