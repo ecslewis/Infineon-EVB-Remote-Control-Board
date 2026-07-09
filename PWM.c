@@ -28,7 +28,7 @@ _PWMSpEventMatchInterrupt(void)
     IFS3bits.PSEMIF = 0;
 
     static uint8_t rdson_state = 0;
-
+    //LATBbits.LATB4 ^= 1;
     switch(rdson_state) {
         case 0:                     // Normal operation -> go to 50kHz for 1 cycle
             if(rdson_pending == 1) {
@@ -45,14 +45,14 @@ _PWMSpEventMatchInterrupt(void)
                 //PTCONbits.PTEN   = 0;
                 LATBbits.LATB3 = 1; //turn on LED
                 PTPER            = period;
-                PHASE1           = period;
-                PHASE2           = period;
+                //PHASE1           = period;
+                //PHASE2           = period;
                 MDC              = compare;
                 PDC1             = compare;
                 PDC2             = compare;
                 //PTCONbits.PTEN   = 1;
-                SEVTCMP         = period - 5;
-                LATBbits.LATB3 = 1; //turn on LED
+                SEVTCMP         = period - 8;
+                
                 rdson_state      = 1;
             }
             break;
@@ -61,18 +61,19 @@ _PWMSpEventMatchInterrupt(void)
             {
                 // restor old frequency
                 PWMCON1bits.IUE = 0;
+                LATBbits.LATB3 = 1; //turn on LED
                 uint16_t period  = (uint16_t)((FPWM / saved_freq) - 1);
                 uint16_t compare = (uint16_t)((uint32_t)period
                                     * saved_duty / 100);
                 //PTCONbits.PTEN   = 0;
                 
                 PTPER            = period;
-                PHASE1           = period;
-                PHASE2           = period;
+                //PHASE1           = period;
+                //PHASE2           = period;
                 MDC              = compare;
                 PDC1             = compare;
                 PDC2             = compare;
-                 SEVTCMP          = 1;
+                 SEVTCMP          = period- 8;
                  LATBbits.LATB3 = 0; //turn off LED
                 //PTCONbits.PTEN   = 1;
 
@@ -226,7 +227,7 @@ void PWM_Update(uint32_t freq, uint8_t duty)
     PDC2                = compare;
 
        //INTERRUPT ENABLE
-    SEVTCMP            = 1;
+    SEVTCMP            = 8;
     PTCONbits.SEIEN    = 1;
     IFS3bits.PSEMIF    = 0;
     IEC3bits.PSEMIE    = 1;
@@ -274,7 +275,7 @@ void PWM_Mode2(uint32_t freq, uint8_t duty, uint16_t dt_ns)
     
     
     //INTERRUPT ENABLE
-    SEVTCMP            = 1;
+    SEVTCMP            = 8;
     PTCONbits.SEIEN    = 1;
     IFS3bits.PSEMIF    = 0;
     IEC3bits.PSEMIE    = 1;
