@@ -68,8 +68,6 @@
 #include "PWM.h"
 #include "uart.h"
 #include <libpic30.h>
-
-
 uint16_t blink_counter =0;
 
 int main(void)
@@ -97,17 +95,29 @@ while(1) {
    // Maybe stop PWM for safety?? 
         PTCONbits.PTEN = 0;
         Uart_Fault_CNT = 0;
+        evb_status =1;
     }
-
+    //GET FW VERSION
+    if(fw_version_pending) {
+    UART_SendFirmwareVersion();
+    fw_version_pending = 0;
+    }
+    //UPDATE PWM
     if(freq_update_pending == 1) {
         PWM_Update(new_freq, new_duty);
         freq_update_pending = 0;
     }
-
+    //SEND MESSAGE EVB STATUS
+    if(send_message == 1) {
+        UART_SendStatus(evb_status);
+        send_message = 0;
+    }
+    //DC-ZVS MODE
     if(pwm_mode2_pending == 1) {
         PWM_Mode2(new_freq, new_duty, new_dt_ns);
         pwm_mode2_pending = 0;
     }
+    //RDSON MEASUREMENTS IN DC-ZVS
      if(rdson_cycle_done == 1) {
         rdson_cycle_done = 0;
         //led_blink        = 0;   // Stop blinking

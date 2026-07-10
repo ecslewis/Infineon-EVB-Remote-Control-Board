@@ -11,6 +11,8 @@
 //volatile uint8_t pwm_update_pending = 0;
 volatile uint16_t new_dt_ns = 0;
 volatile uint16_t Uart_Fault_CNT = 0;
+volatile uint8_t  send_message =0;
+volatile uint8_t fw_version_pending =0;
 
 void UART_SendByte(uint8_t data){
     LATBbits.LATB9 = 1; //ENABLE DE (DRIVE ENABLE)
@@ -180,46 +182,58 @@ void __attribute__((interrupt, no_auto_psv)) _U1RXInterrupt(void) {
         uint8_t cmd = rx_buf[3];
 
         switch(cmd) {
-            case 0x02:          // STOP
-                led_blink        = 0;
-                PTCONbits.PTEN = 0;
-                LATBbits.LATB2 = 1;
+            case 0x01: //GET FIRMWARE VERSION
+            {
+                fw_version_pending = 1;
+                break;
+            }
+            case 0x03: //GET EVB STATUS
+            {
+                send_message=1; //raise flag
+                break;
+            }
+            case 0x04: //AC-ZVS
+            {
+                break;
+            }
+            case 0x05:          // MODE 1, simple pwm (mostly for testing purposes)
+            {
+                LATBbits.LATB2 = 0;
                 LATBbits.LATB3 = 0;
+                led_blink        = 1;
+                uint16_t freq_khz = ((uint16_t)rx_buf[4] << 8)
+                                     | rx_buf[5];
+                new_freq = (uint32_t)freq_khz * 1000UL;
+                new_duty = rx_buf[6];
+                freq_update_pending = 1;
                 break;
-
-            case 0x03:          // MODE 1, simple pwm (mostly for testing purposes)
-                {
-                    LATBbits.LATB2 = 0;
-                    LATBbits.LATB3 = 0;
-                    led_blink        = 1;
-                    uint16_t freq_khz = ((uint16_t)rx_buf[4] << 8)
-                                         | rx_buf[5];
-                    new_freq = (uint32_t)freq_khz * 1000UL;
-                    new_duty = rx_buf[6];
-                    freq_update_pending = 1;
-                }
+            }
+            case 0x06:          // MODE 2, DC-ZVS (for buck/boost aswell.)
+            {
+                LATBbits.LATB2 = 0;
+                LATBbits.LATB3 = 0;
+                led_blink        = 1;
+                uint16_t freq_khz = ((uint16_t)rx_buf[4] << 8)
+                                     | rx_buf[5];
+                new_freq  = (uint32_t)freq_khz * 1000UL;
+                new_duty  = rx_buf[6];
+                new_dt_ns = ((uint16_t)rx_buf[7] << 8)
+                             | rx_buf[8];
+                pwm_mode2_pending = 1;
+            }
                 break;
-
-            case 0x04:          // MODE 2, DC-ZVS (for buck/boost aswell.)
-                {
-                    LATBbits.LATB2 = 0;
-                    LATBbits.LATB3 = 0;
-                    led_blink        = 1;
-                    uint16_t freq_khz = ((uint16_t)rx_buf[4] << 8)
-                                         | rx_buf[5];
-                    new_freq  = (uint32_t)freq_khz * 1000UL;
-                    new_duty  = rx_buf[6];
-                    new_dt_ns = ((uint16_t)rx_buf[7] << 8)
-                                 | rx_buf[8];
-                    pwm_mode2_pending = 1;
-                }
-                break;
-            case 0x05:
+            case 0x10:
             {
                 led_blink        = 1;
                 LATBbits.LATB2 = 0;
                 rdson_pending    = 1;
-        }
+                break;
+            }
+            case 0x14:          // STOP
+                led_blink        = 0;
+                PTCONbits.PTEN = 0;
+                LATBbits.LATB2 = 1;
+                LATBbits.LATB3 = 0;
                 break;
             default:
                 break;
@@ -229,6 +243,68 @@ void __attribute__((interrupt, no_auto_psv)) _U1RXInterrupt(void) {
         rx_idx        = 0;
         length        = 0;
     }
+}
+
+void UART_SendStatus(uint8_t evb_status) {
+    uint8_t tx_buf[8];
+    
+    // Build packet
+    tx_buf[0] = 0xAB;          // Start byte 1
+    tx_buf[1] = 0xAA;          // Start byte 2
+    tx_buf[2] = 0x02;          // Length (2 data byte)
+    tx_buf[3] = 0x23;          // CMD - status response
+    tx_buf[4] = evb_status;    // 0x00 = NORMAL, 0x01 = ABNORMAL
+
+    // CRC over [0xAA][LEN][CMD][DATA]
+    uint16_t crc = CrcValueByteCalc(&tx_buf[1], 4);
+    
+    tx_buf[5] = (uint8_t)(crc >> 8);   // CRC high
+    tx_buf[6] = (uint8_t)(crc);        // CRC low
+    tx_buf[7] = 0xCD;                  // End byte
+
+    // Transmit
+    LATBbits.LATB9 = 1;               // DE high = transmit
+    __delay_us(10);
+    
+    for(uint8_t i = 0; i < 8; i++) {
+        while(U1STAbits.UTXBF);
+        U1TXREG = tx_buf[i];
+    }
+    
+    while(!U1STAbits.TRMT);           // Wait until fully sent
+    __delay_us(10);
+    
+    LATBbits.LATB9 = 0;               // DE low = receive mode
+}
+void UART_SendFirmwareVersion(void) {
+    // [0xAB][0xAA][0x04][0x21][MAJOR][MINOR][PATCH][CRCH][CRCL][0xCD]
+    uint8_t tx_buf[10];          // ? 10 bytes
+
+    tx_buf[0] = 0xAB;
+    tx_buf[1] = 0xAA;
+    tx_buf[2] = 0x04;            // LENGTH = CMD + MAJOR + MINOR + PATCH
+    tx_buf[3] = 0x21;            // CMD
+    tx_buf[4] = FW_VERSION_MAJOR;
+    tx_buf[5] = FW_VERSION_MINOR;
+    tx_buf[6] = FW_VERSION_PATCH;
+
+    // CRC over [AA][LEN][CMD][MAJOR][MINOR][PATCH] = 6 bytes
+    uint16_t crc = CrcValueByteCalc(&tx_buf[1], 6);
+    tx_buf[7]    = (uint8_t)(crc >> 8);
+    tx_buf[8]    = (uint8_t)(crc);
+    tx_buf[9]    = 0xCD;
+
+    LATBbits.LATB9 = 1;
+    __delay_us(10);
+
+    for(uint8_t i = 0; i < 10; i++) {
+        while(U1STAbits.UTXBF);
+        U1TXREG = tx_buf[i];
+    }
+
+    while(!U1STAbits.TRMT);
+    __delay_us(10);
+    LATBbits.LATB9 = 0;
 }
 const uint16_t crc16Table[256] = 
 {   

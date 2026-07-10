@@ -14,6 +14,7 @@ volatile uint8_t freq_update_pending = 0;
 volatile uint8_t pwm_mode2_pending =0;
 volatile uint8_t  rdson_pending    = 0;
 volatile uint8_t  rdson_cycle_done = 0;
+volatile uint8_t  evb_status =0;
 volatile uint32_t saved_freq       = 0;
 volatile uint8_t  saved_duty       = 0;
 volatile uint8_t led_blink = 0;

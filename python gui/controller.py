@@ -134,8 +134,59 @@ class RS485Controller:
     # Packet: [0xAB][0xAA][0x01][0x02][CRCH][CRCL][0xCD]
     # ──────────────────────────────────────────
     def pwm_stop(self) -> bool:
-        packet = self._build_packet(0x02)
+        packet = self._build_packet(0x14)
         return self._transmit(packet)
+    def get_status(self):
+        if not self.connected:
+            print("DEBUG: not connected")
+            return None
+        
+        with self.lock:
+            try:
+                # Build and send
+                packet = self._build_packet(0x03)
+                print(f"DEBUG: sending packet: {packet.hex()}")
+                self.ser.reset_input_buffer()
+                self.ser.write(packet)
+                
+                # Give MCU time to process and respond
+                import time
+                time.sleep(0.1)
+                
+                # Read response
+                response = self.ser.read(8)
+                print(f"DEBUG: response length: {len(response)}")
+                print(f"DEBUG: response bytes: {response.hex() if response else 'empty'}")
+                
+                if len(response) < 8:
+                    print("DEBUG: response too short")
+                    return None
+                if response[0] != 0xAB or response[1] != 0xAA:
+                    print(f"DEBUG: bad start bytes: {hex(response[0])} {hex(response[1])}")
+                    return None
+                if response[7] != 0xCD:
+                    print(f"DEBUG: bad end byte: {hex(response[7])}")
+                    return None
+                if response[3] != 0x23:
+                    print(f"DEBUG: wrong CMD back: {hex(response[3])}")
+                    return None
+                
+                # Validate CRC
+                crc_received = (response[5] << 8) | response[6]
+                crc_calc     = self._crc16(bytes([
+                    0xAA, response[2], response[3], response[4]
+                ]))
+                print(f"DEBUG: crc_received={hex(crc_received)} crc_calc={hex(crc_calc)}")
+                if crc_calc != crc_received:
+                    print("DEBUG: CRC mismatch")
+                    return None
+                
+                print(f"DEBUG: status = {response[4]}")
+                return response[4]
+                
+            except serial.SerialException as e:
+                print(f"DEBUG: serial exception: {e}")
+                return None
 
     # ──────────────────────────────────────────
     # CMD 0x03 - MODE 1
@@ -149,7 +200,7 @@ class RS485Controller:
         freq_l =  freq_khz       & 0xFF
 
         packet = self._build_packet(
-            0x03,
+            0x05,
             [freq_h, freq_l, duty]
         )
         return self._transmit(packet)
@@ -172,10 +223,96 @@ class RS485Controller:
         dt_l   =  deadtime_ns       & 0xFF
 
         packet = self._build_packet(
-            0x04,
+            0x06,
             [freq_h, freq_l, duty, dt_h, dt_l]
         )
         return self._transmit(packet)
     def measure_rdson(self) -> bool:
-        packet = self._build_packet(0x05)
+        packet = self._build_packet(0x10)
         return self._transmit(packet)
+    def get_firmware_version(self):
+        if not self.connected:
+            return None
+        
+        with self.lock:
+            try:
+                # Build and send request
+                packet = self._build_packet(0x01)
+                print(f"DEBUG: sending FW version request: {packet.hex()}")
+                self.ser.reset_input_buffer()
+                self.ser.write(packet)
+                
+                # Give MCU time to process and respond
+                import time
+                time.sleep(0.1)
+                
+                # Read response
+                # [0xAB][0xAA][0x04][0x21][MAJOR][MINOR][PATCH][CRCH][CRCL][0xCD]
+                response = self.ser.read(10)
+                print(f"DEBUG: FW response length: {len(response)}")
+                print(f"DEBUG: FW response bytes: {response.hex() if response else 'empty'}")
+                
+                if len(response) < 10:
+                    print("DEBUG: FW response too short")
+                    return None
+                if response[0] != 0xAB or response[1] != 0xAA:
+                    print(f"DEBUG: bad start bytes: {hex(response[0])} {hex(response[1])}")
+                    return None
+                if response[9] != 0xCD:
+                    print(f"DEBUG: bad end byte: {hex(response[9])}")
+                    return None
+                if response[3] != 0x21:
+                    print(f"DEBUG: wrong CMD back: {hex(response[3])}")
+                    return None
+                
+                # Validate CRC over [AA][LEN][CMD][MAJOR][MINOR][PATCH]
+                crc_received = (response[7] << 8) | response[8]
+                crc_calc     = self._crc16(bytes([
+                    0xAA, response[2], response[3],
+                    response[4], response[5], response[6]
+                ]))
+                print(f"DEBUG: crc_received={hex(crc_received)} crc_calc={hex(crc_calc)}")
+                if crc_calc != crc_received:
+                    print("DEBUG: CRC mismatch")
+                    return None
+                
+                major = response[4]
+                minor = response[5]
+                patch = response[6]
+                print(f"DEBUG: FW version = {major}.{minor}.{patch}")
+                return (major, minor, patch)
+                
+            except serial.SerialException as e:
+                print(f"DEBUG: serial exception: {e}")
+                return None
+    # # continous polling
+    # def ping(self) -> bool:
+    #     """
+    #     Try to ping EVB but skip if another command is in progress
+    #     Returns True if alive, False if no response, None if busy
+    #     """
+    #     if not self.connected:
+    #         return False
+        
+    #     # Try to acquire lock but don't wait
+    #     acquired = self.lock.acquire(blocking=False)
+    #     if not acquired:
+    #         return True   # assume alive, someone else is using the line
+        
+    #     try:
+    #         packet = self._build_packet(0x03)
+    #         self.ser.reset_input_buffer()
+    #         self.ser.write(packet)
+
+    #         import time
+    #         time.sleep(0.05)
+
+    #         response = self.ser.read(8)
+    #         return len(response) == 8 and response[0] == 0xAB
+
+    #     except (serial.SerialException, OSError):
+    #         self._handle_disconnect()
+    #         return False
+
+    #     finally:
+    #         self.lock.release()   # always release

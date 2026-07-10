@@ -21,6 +21,7 @@ extern volatile uint8_t freq_update_pending;
 extern volatile uint8_t pwm_mode2_pending;
 extern volatile uint8_t  rdson_pending;
 extern volatile uint8_t  rdson_cycle_done;
+extern volatile uint8_t  evb_status;
 extern volatile uint32_t saved_freq;
 extern volatile uint8_t  saved_duty;
 extern volatile uint8_t led_blink;
