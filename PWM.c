@@ -253,6 +253,7 @@ void PWM_Mode2(uint32_t freq, uint8_t duty, uint16_t dt_ns)
     IOCON1bits.OVRENL = 0;    // PWM module drives PWM1L
     IOCON1bits.PENH   = 1;
     IOCON1bits.PENL   = 1;
+    FCLCON1bits.FLTMOD = 0b11;  // 
     IOCON1bits.PMOD   = 0b00; // Complementary
     uint16_t dt_counts = (uint16_t)((uint32_t)dt_ns * 118UL / 1000UL);
     if(dt_counts > 59) dt_counts = 59;   // clamp to 500ns max
