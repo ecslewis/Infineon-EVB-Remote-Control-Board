@@ -515,8 +515,19 @@ class App:
             )
     def pwm_stop(self):
         if self.ctrl.pwm_stop():
+            # Reset status and fw labels back to no data
+            self.evb_status_label.config(
+                text = "─  No data",
+                fg   = self.SUBTEXT,
+                bg   = self.CARD
+            )
+            self.fw_version_label.config(
+                text = "─  No data",
+                fg   = self.SUBTEXT,
+                bg   = self.CARD
+            )
             self.status.config(
-                text = "PWM stopped",
+                text = "PWM stopped  ·  MCU reset",
                 fg   = self.SUBTEXT
             )
         else:

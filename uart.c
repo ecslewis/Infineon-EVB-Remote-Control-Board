@@ -229,12 +229,25 @@ void __attribute__((interrupt, no_auto_psv)) _U1RXInterrupt(void) {
                 rdson_pending    = 1;
                 break;
             }
-            case 0x14:          // STOP
+            case 0x14: 
+            {// STOP
                 led_blink        = 0;
                 PTCONbits.PTEN = 0;
-                LATBbits.LATB2 = 1;
-                LATBbits.LATB3 = 0;
+                
+                LATBbits.LATB2 = 0;
+                freq_update_pending = 0;
+                pwm_mode2_pending   = 0;
+                rdson_pending       = 0;
+                send_message        = 0;
+                fw_version_pending  = 0;
+                //led_blink           = 0;
+                __delay_ms(10);
+                //TURN ON INDICATOR
+                LATBbits.LATB3 = 1;
+                //RST
+                asm("RESET");
                 break;
+            }
             default:
                 break;
         }
@@ -249,9 +262,9 @@ void UART_SendStatus(uint8_t evb_status) {
     uint8_t tx_buf[8];
     
     // Build packet
-    tx_buf[0] = 0xAB;          // Start byte 1
-    tx_buf[1] = 0xAA;          // Start byte 2
-    tx_buf[2] = 0x02;          // Length (2 data byte)
+    tx_buf[0] = 0xAB;          // STARY
+    tx_buf[1] = 0xAA;          // START 2
+    tx_buf[2] = 0x02;          // LENGTH
     tx_buf[3] = 0x23;          // CMD - status response
     tx_buf[4] = evb_status;    // 0x00 = NORMAL, 0x01 = ABNORMAL
 
@@ -277,13 +290,13 @@ void UART_SendStatus(uint8_t evb_status) {
     LATBbits.LATB9 = 0;               // DE low = receive mode
 }
 void UART_SendFirmwareVersion(void) {
-    // [0xAB][0xAA][0x04][0x21][MAJOR][MINOR][PATCH][CRCH][CRCL][0xCD]
-    uint8_t tx_buf[10];          // ? 10 bytes
-
+    uint8_t tx_buf[10]; //10 bytes
+    //[0xAB][0xAA][LEN][CMD][DATA...][CRCH][CRCL][0xCD]
+    //[0xAB][0xAA][0x04][0x21][MAJOR][MINOR][PATCH][CRCH][CRCL][0xCD]
     tx_buf[0] = 0xAB;
     tx_buf[1] = 0xAA;
-    tx_buf[2] = 0x04;            // LENGTH = CMD + MAJOR + MINOR + PATCH
-    tx_buf[3] = 0x21;            // CMD
+    tx_buf[2] = 0x04;            
+    tx_buf[3] = 0x21;           
     tx_buf[4] = FW_VERSION_MAJOR;
     tx_buf[5] = FW_VERSION_MINOR;
     tx_buf[6] = FW_VERSION_PATCH;

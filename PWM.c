@@ -215,8 +215,8 @@ void PWM_Update(uint32_t freq, uint8_t duty)
     IOCON2bits.PMOD   = 0b00; // Complementary 
     IOCON1bits.PMOD = 0b00;  // Complementary
     
-    PWMCON1bits.MDCS    = 1;
-    PWMCON2bits.MDCS    = 1;
+    PWMCON1bits.MDCS    = 1; //USE MASTER DUTY NOT PTPER1
+    PWMCON2bits.MDCS    = 1; //USER MASTER DUTY (for synch PWM1 & PWM2)
     PWMCON1bits.ITB     = 0;
     PWMCON2bits.ITB     = 0;
 
@@ -262,8 +262,8 @@ void PWM_Mode2(uint32_t freq, uint8_t duty, uint16_t dt_ns)
     ALTDTR1 = dt_counts;
     DTR2    = 0; 
     ALTDTR2 = 0;
-    PWMCON1bits.MDCS  = 1;    //MDC
-    PWMCON1bits.ITB   = 0;    // PTPER
+    PWMCON1bits.MDCS  = 1;    //MASTER DUTY CYCLE! TO SYNC.
+    PWMCON1bits.ITB   = 0;    // PTPER do not use own time based register.
 
 //PWM2 OVERRIDE
     IOCON2bits.PMOD   = 0b11; // NOT complementary --> indep mode]
