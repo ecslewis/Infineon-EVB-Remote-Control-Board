@@ -260,8 +260,8 @@ void PWM_Mode2(uint32_t freq, uint8_t duty, uint16_t dt_ns)
     if(dt_counts > 59) dt_counts = 59;   // clamp to 500ns max
     PWMCON1bits.DTC = 0b00; //set positive deadtime
     PWMCON1bits.IUE = 0; //wait until PWM cycle ends to update
-    DTR1    = dt_counts;  
-    ALTDTR1 = dt_counts;
+    DTR1    = dt_counts -4.5;  
+    ALTDTR1 = dt_counts + 10;
     DTR2    = 0; 
     ALTDTR2 = 0;
     PWMCON1bits.MDCS  = 1;    //MDC
