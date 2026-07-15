@@ -248,6 +248,7 @@ void PWM_Mode2(uint32_t freq, uint8_t duty, uint16_t dt_ns)
     PHASE1 = period;
     PDC1   = compare;
     MDC    = compare;
+    //hi
 
     IOCON1bits.OVRENH = 0;    // PWM module drives PWM1H
     IOCON1bits.OVRENL = 0;    // PWM module drives PWM1L
