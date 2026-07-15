@@ -275,11 +275,9 @@ BDS_CONTROL.X/
 
 ## Known Limitations
 
-- ⚠️ **Unidirectional devices only** — bidirectional operation not currently supported
 - ⚠️ **No closed loop control** — frequency and duty are open loop, set manually by user
 - ⚠️ **RS-485 polarity sensitive** — swapped A+/B- will result in no communication
-- ⚠️ **Dead-time clamped at 500ns** — hardware limit enforced in firmware (59 counts max)
-- ⚠️ **RDSon cycle is blocking** — normal operation pauses for one 50kHz cycle during measurement
+- ⚠️ **Dead-time clamped at 500ns** — hardware limit enforced in firmware
 
 ---
 
