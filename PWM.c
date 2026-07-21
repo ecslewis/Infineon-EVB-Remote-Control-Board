@@ -245,28 +245,28 @@ void PWM_Mode2(uint32_t freq, uint8_t duty, uint16_t dt_ns)
     uint16_t compare = (uint16_t)((uint32_t)period * duty / 100);
 
     PTPER  = period;
-    PHASE1 = 0;
+    //PHASE1 = 0; HBH
     PDC1   = compare;
-    MDC    = compare;
+    //MDC    = compare; HBH
     //hi
 
-    IOCON1bits.OVRENH = 0;    // PWM module drives PWM1H
-    IOCON1bits.OVRENL = 0;    // PWM module drives PWM1L
+    //IOCON1bits.OVRENH = 0;    // PWM module drives PWM1H HBH
+    //IOCON1bits.OVRENL = 0;    // PWM module drives PWM1L HBH
     IOCON1bits.PENH   = 1;
     IOCON1bits.PENL   = 1;
     IOCON1bits.PMOD   = 0b00; // Complementary
-    FCLCON1bits.FLTMOD = 0b11; //DEISABLE
+    //FCLCON1bits.FLTMOD = 0b11; //DEISABLE HBH
     uint16_t dt_counts = (uint16_t)((uint32_t)dt_ns * 118UL / 1000UL);
     if(dt_counts > 59) dt_counts = 59;   // clamp to 500ns max
-    PWMCON1bits.DTC = 0b00; //set positive deadtime
-    PWMCON1bits.IUE = 0; //wait until PWM cycle ends to update
+    //PWMCON1bits.DTC = 0b00; //set positive deadtime HBH
+    //PWMCON1bits.IUE = 0; //wait until PWM cycle ends to update HBH
     DTR1    = dt_counts;  
     ALTDTR1 = dt_counts;
-    DTR2    = 0; 
-    ALTDTR2 = 0;
-    PWMCON1bits.MDCS  = 0;    //MDC
-    PWMCON1bits.CAM=0; //CENTER AL;IGNED MODE =1 EDGE ALIGNED = 0
-    PWMCON1bits.ITB   = 0;    // USE PTPER if ITB=0 (automatic edge align so ignore CAM if ITB=0)
+    //DTR2    = 0; HBH
+    //ALTDTR2 = 0; HBH
+    // HBH PWMCON1bits.MDCS  = 0;    //MDC
+    // HBH PWMCON1bits.CAM=0; //CENTER AL;IGNED MODE =1 EDGE ALIGNED = 0
+    // HBH PWMCON1bits.ITB   = 0;    // USE PTPER if ITB=0 (automatic edge align so ignore CAM if ITB=0)
     //IF ITB=0, use phase
 
 //PWM2 OVERRIDE
@@ -280,12 +280,12 @@ void PWM_Mode2(uint32_t freq, uint8_t duty, uint16_t dt_ns)
     FCLCON2bits.FLTMOD = 0b11;
     
     
-    //INTERRUPT ENABLE
-    SEVTCMP            = 8;
-    PTCONbits.SEIEN    = 1;
-    IFS3bits.PSEMIF    = 0;
-    IEC3bits.PSEMIE    = 1;
-    IPC14bits.PSEMIP   = 4;
+    //INTERRUPT ENABLE HBH
+//    SEVTCMP            = 8;
+//    PTCONbits.SEIEN    = 1;
+//    IFS3bits.PSEMIF    = 0;
+//    IEC3bits.PSEMIE    = 1;
+//    IPC14bits.PSEMIP   = 4;
     
     
     //enable PWM

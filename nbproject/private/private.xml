@@ -3,11 +3,9 @@
     <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="0"/>
     <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
         <group>
-            <file>file:/C:/Users/lewise/MPLABXProjects/BDS_CONTROL.X/PWM.c</file>
-            <file>file:/C:/Users/lewise/MPLABXProjects/BDS_CONTROL.X/PWM.h</file>
-            <file>file:/C:/Users/lewise/MPLABXProjects/BDS_CONTROL.X/uart.c</file>
-            <file>file:/C:/Users/lewise/MPLABXProjects/BDS_CONTROL.X/uart.h</file>
-            <file>file:/C:/Users/lewise/MPLABXProjects/BDS_CONTROL.X/main.c</file>
+            <file>file:/C:/Users/heb/Infineon-EVB-Remote-Control-Board/uart.c</file>
+            <file>file:/C:/Users/heb/Infineon-EVB-Remote-Control-Board/uart.h</file>
+            <file>file:/C:/Users/heb/Infineon-EVB-Remote-Control-Board/PWM.c</file>
         </group>
     </open-files>
 </project-private>
