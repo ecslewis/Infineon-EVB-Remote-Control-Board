@@ -100,6 +100,7 @@ while(1) {
     //GET FW VERSION
     if(fw_version_pending) {
     UART_SendFirmwareVersion();
+    //PWM_Init();
     fw_version_pending = 0;
     }
     //UPDATE PWM
@@ -116,6 +117,12 @@ while(1) {
     if(pwm_mode2_pending == 1) {
         PWM_Mode2(new_freq, new_duty, new_dt_ns);
         pwm_mode2_pending = 0;
+    }
+    
+    //AC-ZVS MODE
+    if (ac_zvs==1){
+        //FUNCTION DECLARATION here
+        ac_zvs=0;
     }
     //RDSON MEASUREMENTS IN DC-ZVS
      if(rdson_cycle_done == 1) {

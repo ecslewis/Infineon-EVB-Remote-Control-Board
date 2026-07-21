@@ -78,7 +78,7 @@ class App:
         conn_row.pack(fill="x", pady=(4, 0))
         self.port_label = tk.Label(
             conn_row,
-            text   = "COM5  ·  RS485  ·  9600 baud",
+            text   = "COM6  ·  RS485  ·  9600 baud",
             font   = self.f_version,
             bg     = self.CARD,
             fg     = self.SUBTEXT,
@@ -416,9 +416,9 @@ class App:
     # METHODS
     # ──────────────────────────────────────────
     def connect(self):
-        if self.ctrl.connect("COM5", baudrate=9600):
+        if self.ctrl.connect("COM6", baudrate=9600):
             self.status.config(
-                text = "Connected  ·  COM5  ·  9600 baud",
+                text = "Connected  ·  COM6  ·  9600 baud",
                 fg   = self.GREEN
             )
             self.port_label.config(

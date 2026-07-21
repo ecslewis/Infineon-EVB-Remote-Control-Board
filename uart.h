@@ -15,11 +15,12 @@
 //UPDATE FW VERSION!!
 #define FW_VERSION_MAJOR  1
 #define FW_VERSION_MINOR  0
-#define FW_VERSION_PATCH  0
+#define FW_VERSION_PATCH  1
 
 extern volatile uint16_t Uart_Fault_CNT;
 extern volatile uint8_t  send_message;
 extern volatile uint8_t fw_version_pending;
+extern volatile uint8_t ac_zvs;
 
 
 //static uint8_t baudrate;

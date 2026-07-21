@@ -13,6 +13,7 @@ volatile uint16_t new_dt_ns = 0;
 volatile uint16_t Uart_Fault_CNT = 0;
 volatile uint8_t  send_message =0;
 volatile uint8_t fw_version_pending =0;
+volatile uint8_t ac_zvs=0;
 
 void UART_SendByte(uint8_t data){
     LATBbits.LATB9 = 1; //ENABLE DE (DRIVE ENABLE)
@@ -194,6 +195,7 @@ void __attribute__((interrupt, no_auto_psv)) _U1RXInterrupt(void) {
             }
             case 0x04: //AC-ZVS
             {
+                ac_zvs=1;
                 break;
             }
             case 0x05:          // MODE 1, simple pwm (mostly for testing purposes)
