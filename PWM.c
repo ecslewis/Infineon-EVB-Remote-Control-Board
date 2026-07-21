@@ -221,8 +221,8 @@ void PWM_Update(uint32_t freq, uint8_t duty)
     PWMCON2bits.ITB     = 0;
 
     PTPER               = period;
-    PHASE1              = period;
-    PHASE2              = period;
+    PHASE1              = 0;
+    PHASE2              = 0;
     MDC                 = compare;
     PDC1                = compare;
     PDC2                = compare;
@@ -245,7 +245,7 @@ void PWM_Mode2(uint32_t freq, uint8_t duty, uint16_t dt_ns)
     uint16_t compare = (uint16_t)((uint32_t)period * duty / 100);
 
     PTPER  = period;
-    PHASE1 = period;
+    PHASE1 = 0;
     PDC1   = compare;
     MDC    = compare;
     //hi
@@ -255,24 +255,26 @@ void PWM_Mode2(uint32_t freq, uint8_t duty, uint16_t dt_ns)
     IOCON1bits.PENH   = 1;
     IOCON1bits.PENL   = 1;
     IOCON1bits.PMOD   = 0b00; // Complementary
-    FCLCON1bits.FLTMOD = 0b11;
+    FCLCON1bits.FLTMOD = 0b11; //DEISABLE
     uint16_t dt_counts = (uint16_t)((uint32_t)dt_ns * 118UL / 1000UL);
     if(dt_counts > 59) dt_counts = 59;   // clamp to 500ns max
     PWMCON1bits.DTC = 0b00; //set positive deadtime
     PWMCON1bits.IUE = 0; //wait until PWM cycle ends to update
     DTR1    = dt_counts;  
     ALTDTR1 = dt_counts;
-    DTR2    = dt_counts; 
-    ALTDTR2 = dt_counts;
-    PWMCON1bits.MDCS  = 1;    //MDC
-    PWMCON1bits.CAM=0; //CENTER AL;IGNED MODE
-    PWMCON1bits.ITB   = 0;    // USE PTPER
+    DTR2    = 0; 
+    ALTDTR2 = 0;
+    PWMCON1bits.MDCS  = 0;    //MDC
+    PWMCON1bits.CAM=0; //CENTER AL;IGNED MODE =1 EDGE ALIGNED = 0
+    PWMCON1bits.ITB   = 0;    // USE PTPER if ITB=0 (automatic edge align so ignore CAM if ITB=0)
+    //IF ITB=0, use phase
 
 //PWM2 OVERRIDE
     IOCON2bits.PMOD   = 0b11; // NOT complementary --> indep mode]
-    IOCON2bits.PENH   = 1;    // PWM module owns pin
+    IOCON2bits.PENH   = 1;    
     IOCON2bits.PENL   = 1;
-    IOCON2bits.OVRDAT = 0b11; // PWM2H = HIGH                         // PWM2L = HIGH //use overriden data
+    IOCON2bits.OVRDAT = 0b11; // PWM2H = HIGH                         // PWM2L = HIGH 
+    //use overriden data
     IOCON2bits.OVRENH = 1;    // Override hsS
     IOCON2bits.OVRENL = 1;    // Override hsS
     FCLCON2bits.FLTMOD = 0b11;

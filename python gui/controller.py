@@ -135,6 +135,7 @@ class RS485Controller:
     # ──────────────────────────────────────────
     def pwm_stop(self) -> bool:
         packet = self._build_packet(0x14)
+        print(f"DEBUG: PWM stopped")
         return self._transmit(packet)
     def get_status(self):
         if not self.connected:
@@ -203,6 +204,7 @@ class RS485Controller:
             0x05,
             [freq_h, freq_l, duty]
         )
+        print(f"DEBUG: PWM mode 1 set frequency:{freq_khz}kHz, duty:{duty}%")
         return self._transmit(packet)
 
     # ──────────────────────────────────────────
@@ -226,6 +228,7 @@ class RS485Controller:
             0x06,
             [freq_h, freq_l, duty, dt_h, dt_l]
         )
+        print(f"DEBUG: PWM mode 1 set frequency:{freq_khz}kHz, duty:{duty}%, deadtime: {deadtime_ns}ns")
         return self._transmit(packet)
     def measure_rdson(self) -> bool:
         packet = self._build_packet(0x10)
