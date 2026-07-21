@@ -24,7 +24,7 @@ CLEAN_SUBPROJECTS=${CLEAN_SUBPROJECTS_${SUBPROJECTS}}
 
 
 # Project Name
-PROJECTNAME=Infineon-EVB-Remote-Control-Board
+PROJECTNAME=BDS_CONTROL.X
 
 # Active Configuration
 DEFAULTCONF=default
