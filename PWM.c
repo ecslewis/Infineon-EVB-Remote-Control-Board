@@ -22,30 +22,33 @@ static uint32_t current_freq = DEFAULT_FREQ;
 static uint8_t  current_duty = DEFAULT_DUTY;
 void StartRestoreTimerForOne50kHzCycle(void)
 {
+    LATBbits.LATB3 = 1; //turn on LED
     T2CONbits.TON = 0;
     T2CONbits.TCS = 0;      // internal clock
     T2CONbits.TGATE = 0;
     T2CONbits.TCKPS = 0b00; // 1:1 prescaler
     TMR2 = 0;
     // 50 kHz period = 20 us
-    PR2 = (uint16_t)((FCY / 50000UL) - 1);
+    PR2 = 1;
     IFS0bits.T2IF = 0;
     IPC1bits.T2IP = 5;
     IEC0bits.T2IE = 1;
     T2CONbits.TON = 1;
+    LATBbits.LATB3 = 0; //turn on LED
 }
 void __attribute__((interrupt, no_auto_psv))
 _PWMSpEventMatchInterrupt(void)
 {
-    IFS4bits.PSESIF = 0;
+    IFS3bits.PSEMIF    = 0;
     if (rdson_pending && !rdson_active)
     {
         rdson_pending = 0;
         rdson_active = 1;
+       
         saved_freq = new_freq;
         saved_duty  = new_duty;
         PWMCON1bits.IUE = 0;
-        uint16_t period  = (uint16_t)((FPWM / 50000UL) - 1);
+        uint16_t period  = (uint16_t)((FPWM / 50000UL) - 1)*8;
         uint16_t compare = (uint16_t)((uint32_t)period * saved_duty / 100);
         PTPER = period;
         MDC   = compare;
@@ -64,6 +67,7 @@ _T2Interrupt(void)
         PWMCON1bits.IUE = 0;
         uint16_t period  = (uint16_t)((FPWM / saved_freq) - 1) * 8;
         uint16_t compare = (uint16_t)((uint32_t)period * saved_duty / 100);
+        //LATBbits.LATB3 = 0; //turn on LED
         PTPER = period;
         MDC   = compare;
         PDC1  = compare;
@@ -113,63 +117,63 @@ void IO_Init(void)
         LATBbits.LATB3 = 0; //initially off
         //IOCON1bits.P //set to output pin pwm1H
 }
-void PWM_Init(void)
-{
-    PTCONbits.PTEN      = 0; //disable PWM while configuring PWM
-    PTCON2bits.PCLKDIV  = 0b000; //divides the pwm clock before it reachers the counter
-    /*we want full speed. therefore do not divide by anything but 1
-     * FPWM/1=FPWM max efficeincy
-     */
-    PTPER               = (uint16_t)((FPWM / DEFAULT_FREQ) - 1);
-    // Temporarily hardcode the value to bypass define issue
-    //PTPER = 588;   // hardcode directly
-    /*
-     *
-     7.36Mhz/200Khz - 1= 36.85-1=35 roughly 204kHz
-     */
-    /* ------------------------------------------------------------------ */
-    /* PWM1  -  Complementary, 50 % duty                                  */
-    /* ------------------------------------------------------------------ */
-    PHASE1              = PTPER;
-    PHASE2              = PTPER;
-    PDC1                = (uint16_t)((uint32_t)PTPER * DEFAULT_DUTY / 100);
-    PDC2                = (uint16_t)((uint32_t)PTPER * DEFAULT_DUTY / 100);
-    // we get 35 * 0.5 = 17.5
-    DTR1                = 0;           // No dead-time on high side
-    DTR2 =0;
-    ALTDTR1             = 0;           // No dead-time on low  side
-    ALTDTR1 =0;
-    FCLCON1bits.FLTMOD  = 0b11;        // Fault input DISABLED
-    FCLCON2bits.FLTMOD  = 0b11;        // Fault input DISABLED
-    IOCON1bits.OVRENH   = 0;           // PWM module drives PWM1H
-    IOCON1bits.OVRENL   = 0;           // PWM module drives PWM1L
-    IOCON2bits.OVRENH   = 0;           // PWM module drives PWM1H
-    IOCON2bits.OVRENL   = 0;           // PWM module drives PWM1L
-    IOCON1bits.PENH     = 1;           // 1= pin is PWM module 0= GPIO
-    IOCON1bits.PENL     = 1;           // 1= pin is PWM module 0= GPIO
-    IOCON2bits.PENH = 1;   // PWM2H
-    IOCON2bits.PENL = 1;   // PWM2L
-    IOCON1bits.POLH     = 0;           // PWM1H active HIGH
-    IOCON1bits.POLL     = 0;           // PWM1L active HIGH
-    IOCON2bits.POLH     = 0;           // PWM1H active HIGH
-    IOCON2bits.POLL     = 0;           // PWM1L active HIGH
-    IOCON1bits.PMOD     = 0b00;        //independant opration
-    IOCON2bits.PMOD     = 0b00;        //independant opration
-                                       // PWM1L = NOT PWM1H  (hardware)
-    //which means High and LOW can only be opposites of each other, never the same
-    //HL AND HH CANNOT BE ACTIVE AT THE SAME TIME
-    PWMCON1bits.ITB     = 0;           // Use PTPER (not PHASE1) as period
-    PWMCON2bits.ITB     = 0;           // Use PTPER (not PHASE1) as period
-    PWMCON1bits.MDCS    = 1;           // Use MDC as duty-cycle source
-    PWMCON2bits.MDCS    = 1;           // Use MDC as duty-cycle source
-    /* ------------------------------------------------------------------ */
-    /* Master Duty Cycle - shared by PWM1 and PWM2 (MDCS = 1 above)       */
-    /* ------------------------------------------------------------------ */
-    MDC                 = (uint16_t)((uint32_t)PTPER * DEFAULT_DUTY / 100);
-    //MDC   = 200;   // hardcode directly
-    /* Enable timebase */
-    PTCONbits.PTEN      = 1; //re enable PWm signals
-}
+//void PWM_Init(void)
+//{
+//    PTCONbits.PTEN      = 0; //disable PWM while configuring PWM
+//    PTCON2bits.PCLKDIV  = 0b000; //divides the pwm clock before it reachers the counter
+//    /*we want full speed. therefore do not divide by anything but 1
+//     * FPWM/1=FPWM max efficeincy
+//     */
+//    PTPER               = (uint16_t)((FPWM / DEFAULT_FREQ) - 1);
+//    // Temporarily hardcode the value to bypass define issue
+//    //PTPER = 588;   // hardcode directly
+//    /*
+//     *
+//     7.36Mhz/200Khz - 1= 36.85-1=35 roughly 204kHz
+//     */
+//    /* ------------------------------------------------------------------ */
+//    /* PWM1  -  Complementary, 50 % duty                                  */
+//    /* ------------------------------------------------------------------ */
+//    PHASE1              = PTPER;
+//    PHASE2              = PTPER;
+//    PDC1                = (uint16_t)((uint32_t)PTPER * DEFAULT_DUTY / 100);
+//    PDC2                = (uint16_t)((uint32_t)PTPER * DEFAULT_DUTY / 100);
+//    // we get 35 * 0.5 = 17.5
+//    DTR1                = 0;           // No dead-time on high side
+//    DTR2 =0;
+//    ALTDTR1             = 0;           // No dead-time on low  side
+//    ALTDTR1 =0;
+//    FCLCON1bits.FLTMOD  = 0b11;        // Fault input DISABLED
+//    FCLCON2bits.FLTMOD  = 0b11;        // Fault input DISABLED
+//    IOCON1bits.OVRENH   = 0;           // PWM module drives PWM1H
+//    IOCON1bits.OVRENL   = 0;           // PWM module drives PWM1L
+//    IOCON2bits.OVRENH   = 0;           // PWM module drives PWM1H
+//    IOCON2bits.OVRENL   = 0;           // PWM module drives PWM1L
+//    IOCON1bits.PENH     = 1;           // 1= pin is PWM module 0= GPIO
+//    IOCON1bits.PENL     = 1;           // 1= pin is PWM module 0= GPIO
+//    IOCON2bits.PENH = 1;   // PWM2H
+//    IOCON2bits.PENL = 1;   // PWM2L
+//    IOCON1bits.POLH     = 0;           // PWM1H active HIGH
+//    IOCON1bits.POLL     = 0;           // PWM1L active HIGH
+//    IOCON2bits.POLH     = 0;           // PWM1H active HIGH
+//    IOCON2bits.POLL     = 0;           // PWM1L active HIGH
+//    IOCON1bits.PMOD     = 0b00;        //independant opration
+//    IOCON2bits.PMOD     = 0b00;        //independant opration
+//                                       // PWM1L = NOT PWM1H  (hardware)
+//    //which means High and LOW can only be opposites of each other, never the same
+//    //HL AND HH CANNOT BE ACTIVE AT THE SAME TIME
+//    PWMCON1bits.ITB     = 0;           // Use PTPER (not PHASE1) as period
+//    PWMCON2bits.ITB     = 0;           // Use PTPER (not PHASE1) as period
+//    PWMCON1bits.MDCS    = 1;           // Use MDC as duty-cycle source
+//    PWMCON2bits.MDCS    = 1;           // Use MDC as duty-cycle source
+//    /* ------------------------------------------------------------------ */
+//    /* Master Duty Cycle - shared by PWM1 and PWM2 (MDCS = 1 above)       */
+//    /* ------------------------------------------------------------------ */
+//    MDC                 = (uint16_t)((uint32_t)PTPER * DEFAULT_DUTY / 100);
+//    //MDC   = 200;   // hardcode directly
+//    /* Enable timebase */
+//    PTCONbits.PTEN      = 1; //re enable PWm signals
+//}
 void PWM_Update(uint32_t freq, uint8_t duty)
 {
     uint16_t period  = (uint16_t)((FPWM / freq) - 1);
@@ -246,9 +250,9 @@ void PWM_Mode2(uint32_t freq, uint8_t duty, uint16_t dt_ns)
     //INTERRUPT ENABLE HBH
    SEVTCMP            = 8;
     PTCONbits.SEIEN    = 1;
-    IFS4bits.PSESIF    = 0;
-    IEC4bits.PSESIE    = 1;
-    IPC18bits.PSESIP   = 4;
+    IFS3bits.PSEMIF    = 0;
+    IEC3bits.PSEMIE    = 1;
+    IPC14bits.PSEMIP   = 4;
     //enable PWM
     PTCONbits.PTEN    = 1;    // RE-enable PWM sgn
 }
