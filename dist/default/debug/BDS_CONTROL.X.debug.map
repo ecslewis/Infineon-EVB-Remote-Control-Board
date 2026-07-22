@@ -4,6 +4,7 @@ Tool Name:
   c:\program files\microchip\xc16\v2.10\bin\bin\..\bin/elf-ld.exe
 
 Command:
+<<<<<<< Updated upstream
   -TC:\\Users\\lewise\\AppData\\Local\\Temp\\tmp0000202c.00 \
   -TC:\\Users\\lewise\\AppData\\Local\\Temp\\tmp0000202c.01 \
   -TC:\\Users\\lewise\\AppData\\Local\\Temp\\tmp0000202c.02 \
@@ -11,6 +12,15 @@ Command:
   -TC:\\Users\\lewise\\AppData\\Local\\Temp\\tmp0000202c.04 \
   -TC:\\Users\\lewise\\AppData\\Local\\Temp\\tmp0000202c.05 \
   -TC:\\Users\\lewise\\AppData\\Local\\Temp\\tmp0000202c.06 \
+=======
+  -TC:\\Users\\lewise\\AppData\\Local\\Temp\\tmp0000af8c.00 \
+  -TC:\\Users\\lewise\\AppData\\Local\\Temp\\tmp0000af8c.01 \
+  -TC:\\Users\\lewise\\AppData\\Local\\Temp\\tmp0000af8c.02 \
+  -TC:\\Users\\lewise\\AppData\\Local\\Temp\\tmp0000af8c.03 \
+  -TC:\\Users\\lewise\\AppData\\Local\\Temp\\tmp0000af8c.04 \
+  -TC:\\Users\\lewise\\AppData\\Local\\Temp\\tmp0000af8c.05 \
+  -TC:\\Users\\lewise\\AppData\\Local\\Temp\\tmp0000af8c.06 \
+>>>>>>> Stashed changes
   -p33EP32GS502 \
   --mdfp=C:/Program Files/Microchip/MPLABX/v6.30/packs/Microchip/dsPIC33E-GS_DFP/1.5.302/xc16 \
   -o \
@@ -102,6 +112,7 @@ Default Scalar Model: Small
 
 section                    address   length (PC units)   length (bytes) (dec)
 -------                    -------   -----------------   --------------------
+<<<<<<< Updated upstream
 .text                        0x200               0x3ec           0x5e2  (1506)
 .const                       0x5ec               0x200           0x300  (768)
 .text                        0x7ec               0x51c           0x7aa  (1962)
@@ -109,6 +120,15 @@ section                    address   length (PC units)   length (bytes) (dec)
 .init.delay32                0xd2a                0x1c            0x2a  (42)
 
                  Total "program" memory used (bytes):         0x10e9  (4329) 13%
+=======
+.text                        0x200               0x3e4           0x5d6  (1494)
+.const                       0x5e4               0x200           0x300  (768)
+.text                        0x7e4               0x526           0x7b9  (1977)
+.dinit                       0xd0a                0x22            0x33  (51)
+.init.delay32                0xd2c                0x1c            0x2a  (42)
+
+                 Total "program" memory used (bytes):         0x10ec  (4332) 13%
+>>>>>>> Stashed changes
 
 
 "data" Memory  [Origin = 0x1000, Length = 0x1000]
@@ -156,6 +176,7 @@ External Symbols in Data Memory (by address):
                     0x1070                  _saved_freq
                     0x1074                  _saved_duty
                     0x1075                  _led_blink
+                    0x1076                  _rdson_active
                     0x1078                  _new_freq
                     0x107c                  _new_duty
                     0x1084                  _blink_counter
@@ -173,6 +194,7 @@ External Symbols in Data Memory (by name):
                     0x1078                  _new_freq
                     0x106c                  _pwm_mode2_pending
                     0x106a                  _pwm_update_pending
+                    0x1076                  _rdson_active
                     0x106e                  _rdson_cycle_done
                     0x106d                  _rdson_pending
                     0x1074                  _saved_duty
@@ -183,9 +205,10 @@ External Symbols in Program Memory (by address):
 
                   0x000200                  __resetPRI
                   0x00023c                  __psv_init
-                  0x000248                  __data_init_extended
                   0x000248                  __data_init
+                  0x000248                  __data_init_extended
                   0x0002fa                  __PWMSpEventMatchInterrupt
+<<<<<<< Updated upstream
                   0x0003d6                  __T1Interrupt
                   0x000400                  __U1RXInterrupt
                   0x0005c6                  __DefaultInterrupt
@@ -204,10 +227,33 @@ External Symbols in Program Memory (by address):
                   0x000c50                  _CrcValueByteCalc
                   0x000c9c                  _main
                   0x000d2a                  ___delay32
+=======
+                  0x00036c                  __T2Interrupt
+                  0x0003de                  __T1Interrupt
+                  0x000408                  __U1RXInterrupt
+                  0x0005be                  __DefaultInterrupt
+                  0x0005c4                  ___udivsi3
+                  0x0005e4                  _crc16Table
+                  0x0007e4                  _StartRestoreTimerForOne50kHzCycle
+                  0x000810                  _Clock_Init
+                  0x000882                  _IO_Init
+                  0x0008a4                  _PWM_Init
+                  0x000966                  _PWM_Update
+                  0x0009ec                  _PWM_Mode2
+                  0x000ab0                  _Timer1_Init
+                  0x000ada                  _UART_SendByte
+                  0x000afc                  _UART_Init
+                  0x000b54                  _UART_SendStatus
+                  0x000bcc                  _UART_SendFirmwareVersion
+                  0x000c4a                  _CrcValueByteCalc
+                  0x000c96                  _main
+                  0x000d2c                  ___delay32
+>>>>>>> Stashed changes
                   0x005780                  __FSEC.sec
 
 External Symbols in Program Memory (by name):
 
+<<<<<<< Updated upstream
                   0x0007ec                  _Clock_Init
                   0x000c50                  _CrcValueByteCalc
                   0x00085c                  _IO_Init
@@ -226,12 +272,39 @@ External Symbols in Program Memory (by name):
                   0x000400                  __U1RXInterrupt
                   0x000d2a                  ___delay32
                   0x0005cc                  ___udivsi3
+=======
+                  0x000810                  _Clock_Init
+                  0x000c4a                  _CrcValueByteCalc
+                  0x000882                  _IO_Init
+                  0x0008a4                  _PWM_Init
+                  0x0009ec                  _PWM_Mode2
+                  0x000966                  _PWM_Update
+                  0x0007e4                  _StartRestoreTimerForOne50kHzCycle
+                  0x000ab0                  _Timer1_Init
+                  0x000afc                  _UART_Init
+                  0x000ada                  _UART_SendByte
+                  0x000bcc                  _UART_SendFirmwareVersion
+                  0x000b54                  _UART_SendStatus
+                  0x0005be                  __DefaultInterrupt
+                  0x005780                  __FSEC.sec
+                  0x0002fa                  __PWMSpEventMatchInterrupt
+                  0x0003de                  __T1Interrupt
+                  0x00036c                  __T2Interrupt
+                  0x000408                  __U1RXInterrupt
+                  0x000d2c                  ___delay32
+                  0x0005c4                  ___udivsi3
+>>>>>>> Stashed changes
                   0x000248                  __data_init
                   0x000248                  __data_init_extended
                   0x00023c                  __psv_init
                   0x000200                  __resetPRI
+<<<<<<< Updated upstream
                   0x0005ec                  _crc16Table
                   0x000c9c                  _main
+=======
+                  0x0005e4                  _crc16Table
+                  0x000c96                  _main
+>>>>>>> Stashed changes
 
 Memory Configuration
 
@@ -326,7 +399,11 @@ LOAD c:/program files/microchip/xc16/v2.10/bin/bin/../../lib\libfx-elf.a
                   0x000002          0x2 SHORT 0x0 ((ABSOLUTE (__reset) >> 0x10) & 0x7f)
                   0x000003          0x2 SHORT 0x0
 
+<<<<<<< Updated upstream
 .text             0x000200        0x3ec
+=======
+.text             0x000200        0x3e4
+>>>>>>> Stashed changes
  *(.init)
  .init            0x000200         0x48 c:/program files/microchip/xc16/v2.10/bin/bin/../../lib\libc99-pic30-elf.a(crt0_extendedep.o)
                   0x000200                  __resetPRI
@@ -338,23 +415,40 @@ LOAD c:/program files/microchip/xc16/v2.10/bin/bin/../../lib\libfx-elf.a
  *(.user_init)
  *(.handle)
  *(.isr*)
- .isr.text        0x0002fa        0x106 build/default/debug/PWM.o
+ .isr.text        0x0002fa        0x10e build/default/debug/PWM.o
                   0x0002fa                  __PWMSpEventMatchInterrupt
+<<<<<<< Updated upstream
                   0x0003d6                  __T1Interrupt
  .isr.text        0x000400        0x1c6 build/default/debug/uart.o
                   0x000400                  __U1RXInterrupt
  .isr             0x0005c6          0x4 default_isr
                   0x0005c6                  __DefaultInterrupt
+=======
+                  0x00036c                  __T2Interrupt
+                  0x0003de                  __T1Interrupt
+ .isr.text        0x000408        0x1b6 build/default/debug/uart.o
+                  0x000408                  __U1RXInterrupt
+ .isr             0x0005be          0x4 default_isr
+                  0x0005be                  __DefaultInterrupt
+>>>>>>> Stashed changes
  *(.libc)
  *(.libm)
  *(.libdsp)
  *(.lib*)
  .libpic30_crt_start_mode
+<<<<<<< Updated upstream
                   0x0005ca          0x2 c:/program files/microchip/xc16/v2.10/bin/bin/../../lib\libc99-pic30-elf.a(crt_start_mode_normalep.Meo)
                   0x0005ca                  __crt_start_mode
                   0x0005ca                  __crt_start_mode_normal
  .libm.udivsi3    0x0005cc         0x20 c:/program files/microchip/xc16/v2.10/bin/bin/../../lib\libc99-pic30-elf.a(udivsi3.EP_o)
                   0x0005cc                  ___udivsi3
+=======
+                  0x0005c2          0x2 c:/program files/microchip/xc16/v2.10/bin/bin/../../lib\libc99-pic30-elf.a(crt_start_mode_normalep.Meo)
+                  0x0005c2                  __crt_start_mode
+                  0x0005c2                  __crt_start_mode_normal
+ .libm.udivsi3    0x0005c4         0x20 c:/program files/microchip/xc16/v2.10/bin/bin/../../lib\libc99-pic30-elf.a(udivsi3.EP_o)
+                  0x0005c4                  ___udivsi3
+>>>>>>> Stashed changes
 
 usercode
  *(usercode)
@@ -394,6 +488,7 @@ __FALTREG
 .comment
  *(.comment)
 
+<<<<<<< Updated upstream
 .debug_info       0x000000       0x46bb
  *(.debug_info)
  .debug_info      0x000000        0x60f build/default/debug/main.o
@@ -415,18 +510,49 @@ __FALTREG
  .debug_line      0x000137        0x1e9 build/default/debug/PWM.o
  .debug_line      0x000320        0x1ee build/default/debug/uart.o
  .debug_line      0x00050e         0x45 c:/program files/microchip/xc16/v2.10/bin/bin/../../lib\libc99-pic30-elf.a(udivsi3.EP_o)
+=======
+.debug_info       0x000000       0x4b74
+ *(.debug_info)
+ .debug_info      0x000000        0x62f build/default/debug/main.o
+ .debug_info      0x00062f       0x2afb build/default/debug/PWM.o
+ .debug_info      0x00312a       0x19bd build/default/debug/uart.o
+ .debug_info      0x004ae7         0x8d c:/program files/microchip/xc16/v2.10/bin/bin/../../lib\libc99-pic30-elf.a(udivsi3.EP_o)
+ *(.gnu.linkonce.wi.*)
 
-.debug_frame      0x000000        0x214
+.debug_abbrev     0x000000        0x459
+ *(.debug_abbrev)
+ .debug_abbrev    0x000000        0x10b build/default/debug/main.o
+ .debug_abbrev    0x00010b        0x15a build/default/debug/PWM.o
+ .debug_abbrev    0x000265        0x1e0 build/default/debug/uart.o
+ .debug_abbrev    0x000445         0x14 c:/program files/microchip/xc16/v2.10/bin/bin/../../lib\libc99-pic30-elf.a(udivsi3.EP_o)
+
+.debug_line       0x000000        0x53d
+ *(.debug_line)
+ .debug_line      0x000000        0x139 build/default/debug/main.o
+ .debug_line      0x000139        0x1e0 build/default/debug/PWM.o
+ .debug_line      0x000319        0x1df build/default/debug/uart.o
+ .debug_line      0x0004f8         0x45 c:/program files/microchip/xc16/v2.10/bin/bin/../../lib\libc99-pic30-elf.a(udivsi3.EP_o)
+>>>>>>> Stashed changes
+
+.debug_frame      0x000000        0x26c
  *(.debug_frame)
  .debug_frame     0x000000         0x2e build/default/debug/main.o
- .debug_frame     0x00002e        0x112 build/default/debug/PWM.o
- .debug_frame     0x000140         0xd4 build/default/debug/uart.o
+ .debug_frame     0x00002e        0x16a build/default/debug/PWM.o
+ .debug_frame     0x000198         0xd4 build/default/debug/uart.o
 
+<<<<<<< Updated upstream
 .debug_str        0x000000        0x2fa
  *(.debug_str)
  .debug_str       0x000000         0xa0 build/default/debug/main.o
  .debug_str       0x0000a0        0x146 build/default/debug/PWM.o
  .debug_str       0x0001e6        0x114 build/default/debug/uart.o
+=======
+.debug_str        0x000000        0x326
+ *(.debug_str)
+ .debug_str       0x000000         0xa0 build/default/debug/main.o
+ .debug_str       0x0000a0        0x172 build/default/debug/PWM.o
+ .debug_str       0x000212        0x114 build/default/debug/uart.o
+>>>>>>> Stashed changes
 
 .debug_loc
  *(.debug_loc)
@@ -435,14 +561,22 @@ __FALTREG
  *(.debug_macinfo)
 
 .debug_pubnames
+<<<<<<< Updated upstream
                   0x000000        0x267
+=======
+                  0x000000        0x2ba
+>>>>>>> Stashed changes
  *(.debug_pubnames)
  .debug_pubnames
                   0x000000         0x2d build/default/debug/main.o
  .debug_pubnames
-                  0x00002d        0x157 build/default/debug/PWM.o
+                  0x00002d        0x19f build/default/debug/PWM.o
  .debug_pubnames
+<<<<<<< Updated upstream
                   0x000184         0xe3 build/default/debug/uart.o
+=======
+                  0x0001cc         0xee build/default/debug/uart.o
+>>>>>>> Stashed changes
 
 .debug_ranges
  *(.debug_ranges)
@@ -1702,6 +1836,7 @@ LOAD default_isr
 LOAD data_init
 
 .debug_pubtypes
+<<<<<<< Updated upstream
                   0x000068        0x514
  .debug_pubtypes
                   0x000068         0x74 build/default/debug/main.o
@@ -1726,6 +1861,32 @@ __c30_signature
                   0x00059a          0x6 c:/program files/microchip/xc16/v2.10/bin/bin/../../lib\libc99-pic30-elf.a(delay32ep.Meo)
  __c30_signature
                   0x0005a0          0x6 c:/program files/microchip/xc16/v2.10/bin/bin/../../lib\libc99-pic30-elf.a(udivsi3.EP_o)
+=======
+                  0x000068        0x573
+ .debug_pubtypes
+                  0x000068         0x74 build/default/debug/main.o
+ .debug_pubtypes
+                  0x0000dc        0x355 build/default/debug/PWM.o
+ .debug_pubtypes
+                  0x000431        0x1aa build/default/debug/uart.o
+
+__c30_signature
+                  0x0005db         0x2a
+ __c30_signature
+                  0x0005db          0x6 build/default/debug/main.o
+ __c30_signature
+                  0x0005e1          0x6 build/default/debug/PWM.o
+ __c30_signature
+                  0x0005e7          0x6 build/default/debug/uart.o
+ __c30_signature
+                  0x0005ed          0x6 c:/program files/microchip/xc16/v2.10/bin/bin/../../lib\libc99-pic30-elf.a(crt0_extendedep.o)
+ __c30_signature
+                  0x0005f3          0x6 c:/program files/microchip/xc16/v2.10/bin/bin/../../lib\libc99-pic30-elf.a(data_init_extended.o)
+ __c30_signature
+                  0x0005f9          0x6 c:/program files/microchip/xc16/v2.10/bin/bin/../../lib\libc99-pic30-elf.a(delay32ep.Meo)
+ __c30_signature
+                  0x0005ff          0x6 c:/program files/microchip/xc16/v2.10/bin/bin/../../lib\libc99-pic30-elf.a(udivsi3.EP_o)
+>>>>>>> Stashed changes
 
 .nbss               0x1050         0x28
  .nbss              0x1050         0x1a build/default/debug/uart.o
@@ -1743,6 +1904,7 @@ __c30_signature
                     0x1070                  _saved_freq
                     0x1074                  _saved_duty
                     0x1075                  _led_blink
+                    0x1076                  _rdson_active
 
 .ndata              0x1078          0xc
  .ndata             0x1078          0xc build/default/debug/PWM.o
@@ -1781,6 +1943,11 @@ __c30_signature
  .ivt._PWMSpEventMatchInterrupt
                   0x000086          0x2 build/default/debug/PWM.o
 
+.ivt._T2Interrupt
+                  0x000022          0x2
+ .ivt._T2Interrupt
+                  0x000022          0x2 build/default/debug/PWM.o
+
 .ivt._T1Interrupt
                   0x00001a          0x2
  .ivt._T1Interrupt
@@ -1791,6 +1958,7 @@ __c30_signature
  .ivt._U1RXInterrupt
                   0x00002a          0x2 build/default/debug/uart.o
 
+<<<<<<< Updated upstream
 .const              0x85ec        0x200 load address 0x0005ec  
  .const             0x85ec        0x200 build/default/debug/uart.o
                     0x85ec                  _crc16Table
@@ -1818,3 +1986,33 @@ __c30_signature
 .init.delay32     0x000d2a         0x1c
  .init.delay32    0x000d2a         0x1c c:/program files/microchip/xc16/v2.10/bin/bin/../../lib\libc99-pic30-elf.a(delay32ep.Meo)
                   0x000d2a                  ___delay32
+=======
+.const              0x85e4        0x200 load address 0x0005e4  
+ .const             0x85e4        0x200 build/default/debug/uart.o
+                    0x85e4                  _crc16Table
+
+.text             0x0007e4        0x526
+ .text            0x0007e4        0x2f6 build/default/debug/PWM.o
+                  0x0007e4                  _StartRestoreTimerForOne50kHzCycle
+                  0x000810                  _Clock_Init
+                  0x000882                  _IO_Init
+                  0x0008a4                  _PWM_Init
+                  0x000966                  _PWM_Update
+                  0x0009ec                  _PWM_Mode2
+                  0x000ab0                  _Timer1_Init
+ .text            0x000ada        0x1bc build/default/debug/uart.o
+                  0x000ada                  _UART_SendByte
+                  0x000afc                  _UART_Init
+                  0x000b54                  _UART_SendStatus
+                  0x000bcc                  _UART_SendFirmwareVersion
+                  0x000c4a                  _CrcValueByteCalc
+ .text            0x000c96         0x74 build/default/debug/main.o
+                  0x000c96                  _main
+
+.dinit            0x000d0a         0x22
+ .dinit           0x000d0a         0x22 data_init
+
+.init.delay32     0x000d2c         0x1c
+ .init.delay32    0x000d2c         0x1c c:/program files/microchip/xc16/v2.10/bin/bin/../../lib\libc99-pic30-elf.a(delay32ep.Meo)
+                  0x000d2c                  ___delay32
+>>>>>>> Stashed changes

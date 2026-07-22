@@ -25,7 +25,9 @@ extern volatile uint8_t  evb_status;
 extern volatile uint32_t saved_freq;
 extern volatile uint8_t  saved_duty;
 extern volatile uint8_t led_blink;
+extern volatile uint8_t rdson_active;
 // PWM Functions
+void StartRestoreTimerForOne50kHzCycle(void);
 void PWM_Init(void);
 void Clock_Init(void);
 void IO_Init(void);
