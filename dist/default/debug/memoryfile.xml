@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <project>
-  <executable name="dist/default/debug/Infineon-EVB-Remote-Control-Board.debug.elf">
+  <executable name="dist/default/debug/BDS_CONTROL.X.debug.elf">
     <memory name="data">
       <units>bytes</units>
       <length>4096</length>
@@ -11,8 +11,8 @@
     <memory name="program">
       <units>bytes</units>
       <length>32832</length>
-      <used>4236</used>
-      <free>28596</free>
+      <used>4251</used>
+      <free>28581</free>
     </memory>
   </executable>
 </project>

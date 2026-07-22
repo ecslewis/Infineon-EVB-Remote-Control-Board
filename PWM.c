@@ -104,8 +104,10 @@ void Clock_Init(void)
     
     ACLKCONbits.FRCSEL = 1; /* Internal FRC is clock source for auxiliary PLL */
     ACLKCONbits.ENAPLL = 1; /* APLL is enabled */
+    AUXCON1bits.HRPDIS = 0;   // Enable high-resolution period
+    AUXCON1bits.HRDDIS = 0;   // Enable high-resolution duty cycle
     /* clock divider */
-    ACLKCONbits.APSTSCLR = 0b100; /* Auxiliary Clock Output Divider is Divide-by-1 */
+    ACLKCONbits.APSTSCLR = 0b111; /* Auxiliary Clock Output Divider is Divide-by-1 */
     while(ACLKCONbits.APLLCK != 1); /* Wait for Auxiliary PLL to Lock */
     /* With 7.37 MHz FRC input selection, the Auxiliary Clock output will be 16x7.37 MHz = 118 MHz. */
     ACLKCONbits.SELACLK = 1; /* Auxiliary PLL provides the source clock for the PWM and ADC */
@@ -241,7 +243,7 @@ void PWM_Update(uint32_t freq, uint8_t duty)
 void PWM_Mode2(uint32_t freq, uint8_t duty, uint16_t dt_ns)
 {
     PTCONbits.PTEN  = 0;      
-    uint16_t period  = (uint16_t)((FPWM / freq) - 1);
+    uint16_t period  = (uint16_t)((FPWM / freq) - 1)*8;
     uint16_t compare = (uint16_t)((uint32_t)period * duty / 100);
 
     PTPER  = period;
@@ -259,13 +261,13 @@ void PWM_Mode2(uint32_t freq, uint8_t duty, uint16_t dt_ns)
     uint16_t dt_counts = (uint16_t)((uint32_t)dt_ns * 118UL / 1000UL);
     if(dt_counts > 59) dt_counts = 59;   // clamp to 500ns max
     //PWMCON1bits.DTC = 0b00; //set positive deadtime HBH
-    //PWMCON1bits.IUE = 0; //wait until PWM cycle ends to update HBH
-    DTR1    = dt_counts;  
-    ALTDTR1 = dt_counts;
+    //PWMCON1bits.IUE = 1; //wait until PWM cycle ends to update HBH
+    DTR1    = dt_ns;
+    ALTDTR1 = dt_ns;
     //DTR2    = 0; HBH
     //ALTDTR2 = 0; HBH
     // HBH PWMCON1bits.MDCS  = 0;    //MDC
-    // HBH PWMCON1bits.CAM=0; //CENTER AL;IGNED MODE =1 EDGE ALIGNED = 0
+    //HBH PWMCON1bits.CAM=0; //CENTER AL;IGNED MODE =1 EDGE ALIGNED = 0
     // HBH PWMCON1bits.ITB   = 0;    // USE PTPER if ITB=0 (automatic edge align so ignore CAM if ITB=0)
     //IF ITB=0, use phase
 
