@@ -40,7 +40,7 @@ _PWMSpEventMatchInterrupt(void)
                 saved_duty = new_duty;
                 PWMCON1bits.IUE = 0;
                 // Switch to 50kHz
-                uint16_t period  = (uint16_t)((FPWM / 50000UL) - 1);
+                uint16_t period  = (uint16_t)((FPWM / 50000UL) - 1)*8;
                 uint16_t compare = (uint16_t)((uint32_t)period
                                     * saved_duty / 100);
                 //PTCONbits.PTEN   = 0;
@@ -63,7 +63,7 @@ _PWMSpEventMatchInterrupt(void)
                 // restor old frequency
                 PWMCON1bits.IUE = 0;
                 LATBbits.LATB3 = 1; //turn on LED
-                uint16_t period  = (uint16_t)((FPWM / saved_freq) - 1);
+                uint16_t period  = (uint16_t)((FPWM / saved_freq) - 1)*8;
                 uint16_t compare = (uint16_t)((uint32_t)period
                                     * saved_duty / 100);
                 //PTCONbits.PTEN   = 0;
@@ -283,11 +283,11 @@ void PWM_Mode2(uint32_t freq, uint8_t duty, uint16_t dt_ns)
     
     
     //INTERRUPT ENABLE HBH
-//    SEVTCMP            = 8;
-//    PTCONbits.SEIEN    = 1;
-//    IFS3bits.PSEMIF    = 0;
-//    IEC3bits.PSEMIE    = 1;
-//    IPC14bits.PSEMIP   = 4;
+    SEVTCMP            = 8;
+    PTCONbits.SEIEN    = 1;
+    IFS3bits.PSEMIF    = 0;
+    IEC3bits.PSEMIE    = 1;
+    IPC14bits.PSEMIP   = 4;
     
     
     //enable PWM
