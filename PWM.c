@@ -20,7 +20,6 @@ volatile uint8_t rdson_active = 0;
 // globals
 static uint32_t current_freq = DEFAULT_FREQ;
 static uint8_t  current_duty = DEFAULT_DUTY;
-
 void StartRestoreTimerForOne50kHzCycle(void)
 {
     T2CONbits.TON = 0;
@@ -29,74 +28,15 @@ void StartRestoreTimerForOne50kHzCycle(void)
     T2CONbits.TCKPS = 0b00; // 1:1 prescaler
     TMR2 = 0;
     // 50 kHz period = 20 us
-    PR2 = (uint16_t)((FCY / 50000UL) - 1)*8;
+    PR2 = (uint16_t)((FCY / 50000UL) - 1);
     IFS0bits.T2IF = 0;
     IPC1bits.T2IP = 5;
     IEC0bits.T2IE = 1;
     T2CONbits.TON = 1;
 }
-
 void __attribute__((interrupt, no_auto_psv))
 _PWMSpEventMatchInterrupt(void)
 {
-<<<<<<< Updated upstream
-    IFS3bits.PSEMIF = 0;
-
-    static uint8_t rdson_state = 0;
-    //LATBbits.LATB4 ^= 1;
-    switch(rdson_state) {
-        case 0:                     // Normal operation -> go to 50kHz for 1 cycle
-            if(rdson_pending == 1) {
-                rdson_pending = 0;
-
-                // Save current settings
-                saved_freq = new_freq;
-                saved_duty = new_duty;
-                PWMCON1bits.IUE = 0;
-                // Switch to 50kHz
-                uint16_t period  = (uint16_t)((FPWM / 50000UL) - 1);
-                uint16_t compare = (uint16_t)((uint32_t)period
-                                    * saved_duty / 100);
-                //PTCONbits.PTEN   = 0;
-                LATBbits.LATB3 = 1; //turn on LED
-                PTPER            = period;
-                //PHASE1           = period;
-                //PHASE2           = period;
-                MDC              = compare;
-                PDC1             = compare;
-                PDC2             = compare;
-                //PTCONbits.PTEN   = 1;
-                SEVTCMP         = period - 8;
-                
-                rdson_state      = 1;
-            }
-            break;
-
-        case 1:                     // 50kHz cycle done, go back to normal now
-            {
-                // restor old frequency
-                PWMCON1bits.IUE = 0;
-                LATBbits.LATB3 = 1; //turn on LED
-                uint16_t period  = (uint16_t)((FPWM / saved_freq) - 1);
-                uint16_t compare = (uint16_t)((uint32_t)period
-                                    * saved_duty / 100);
-                //PTCONbits.PTEN   = 0;
-                
-                PTPER            = period;
-                //PHASE1           = period;
-                //PHASE2           = period;
-                MDC              = compare;
-                PDC1             = compare;
-                PDC2             = compare;
-                 SEVTCMP          = period- 8;
-                 LATBbits.LATB3 = 0; //turn off LED
-                //PTCONbits.PTEN   = 1;
-
-                rdson_cycle_done = 1;
-                rdson_state      = 0;
-            }
-            break;
-=======
     IFS4bits.PSESIF = 0;
     if (rdson_pending && !rdson_active)
     {
@@ -105,17 +45,15 @@ _PWMSpEventMatchInterrupt(void)
         saved_freq = new_freq;
         saved_duty  = new_duty;
         PWMCON1bits.IUE = 0;
-        uint16_t period  = (uint16_t)((FPWM / 50000UL) - 1)*8;
+        uint16_t period  = (uint16_t)((FPWM / 50000UL) - 1);
         uint16_t compare = (uint16_t)((uint32_t)period * saved_duty / 100);
         PTPER = period;
         MDC   = compare;
         PDC1  = compare;
         PDC2  = compare;
         StartRestoreTimerForOne50kHzCycle();
->>>>>>> Stashed changes
     }
 }
-
 void __attribute__((interrupt, no_auto_psv))
 _T2Interrupt(void)
 {
@@ -134,7 +72,6 @@ _T2Interrupt(void)
         rdson_cycle_done = 1;
     }
 }
-
 void Clock_Init(void)
 {
     // Configure PLL prescaler, PLL postscaler, PLL divisor, 40MHz instruction cycle clock
@@ -150,13 +87,14 @@ void Clock_Init(void)
     while (OSCCONbits.LOCK != 1);
     ACLKCONbits.FRCSEL = 1; /* Internal FRC is clock source for auxiliary PLL */
     ACLKCONbits.ENAPLL = 1; /* APLL is enabled */
+    AUXCON1bits.HRPDIS = 0;   // Enable high-resolution period
+    AUXCON1bits.HRDDIS = 0;   // Enable high-resolution duty cycle
     /* clock divider */
-    ACLKCONbits.APSTSCLR = 0b100; /* Auxiliary Clock Output Divider is Divide-by-1 */
+    ACLKCONbits.APSTSCLR = 0b111; /* Auxiliary Clock Output Divider is Divide-by-1 */
     while(ACLKCONbits.APLLCK != 1); /* Wait for Auxiliary PLL to Lock */
     /* With 7.37 MHz FRC input selection, the Auxiliary Clock output will be 16x7.37 MHz = 118 MHz. */
     ACLKCONbits.SELACLK = 1; /* Auxiliary PLL provides the source clock for the PWM and ADC */
 }
-
 void IO_Init(void)
 {
         IOCON1bits.PENH     = 0;   
@@ -175,7 +113,6 @@ void IO_Init(void)
         LATBbits.LATB3 = 0; //initially off
         //IOCON1bits.P //set to output pin pwm1H
 }
-
 void PWM_Init(void)
 {
     PTCONbits.PTEN      = 0; //disable PWM while configuring PWM
@@ -233,7 +170,6 @@ void PWM_Init(void)
     /* Enable timebase */
     PTCONbits.PTEN      = 1; //re enable PWm signals
 }
-
 void PWM_Update(uint32_t freq, uint8_t duty)
 {
     uint16_t period  = (uint16_t)((FPWM / freq) - 1);
@@ -251,19 +187,13 @@ void PWM_Update(uint32_t freq, uint8_t duty)
     IOCON2bits.OVRENL   = 0;
     IOCON2bits.PMOD   = 0b00; // Complementary
     IOCON1bits.PMOD = 0b00;  // Complementary
-<<<<<<< Updated upstream
-    
-    PWMCON1bits.MDCS    = 1; //USE MASTER DUTY NOT PTPER1
-    PWMCON2bits.MDCS    = 1; //USER MASTER DUTY (for synch PWM1 & PWM2)
-=======
     PWMCON1bits.MDCS    = 1;
     PWMCON2bits.MDCS    = 1;
->>>>>>> Stashed changes
     PWMCON1bits.ITB     = 0;
     PWMCON2bits.ITB     = 0;
     PTPER               = period;
-    PHASE1              = period;
-    PHASE2              = period;
+    PHASE1              = 0;
+    PHASE2              = 0;
     MDC                 = compare;
     PDC1                = compare;
     PDC2                = compare;
@@ -276,43 +206,24 @@ void PWM_Update(uint32_t freq, uint8_t duty)
     //PWM ENABLE
     PTCONbits.PTEN      = 1;   
 }
-
 void PWM_Mode2(uint32_t freq, uint8_t duty, uint16_t dt_ns)
 {
     PTCONbits.PTEN  = 0;      
-    uint16_t period  = (uint16_t)((FPWM / freq) - 1);
+    uint16_t period  = (uint16_t)((FPWM / freq) - 1)*8;
     uint16_t compare = (uint16_t)((uint32_t)period * duty / 100);
     PTPER  = period;
-    PHASE1 = period;
+    //PHASE1 = 0; HBH
     PDC1   = compare;
-<<<<<<< Updated upstream
-    MDC    = compare;
-
-    IOCON1bits.OVRENH = 0;    // PWM module drives PWM1H
-    IOCON1bits.OVRENL = 0;    // PWM module drives PWM1L
-=======
     //MDC    = compare; HBH
     //hi
     //IOCON1bits.OVRENH = 0;    // PWM module drives PWM1H HBH
     //IOCON1bits.OVRENL = 0;    // PWM module drives PWM1L HBH
->>>>>>> Stashed changes
     IOCON1bits.PENH   = 1;
     IOCON1bits.PENL   = 1;
-    FCLCON1bits.FLTMOD = 0b11;  // 
     IOCON1bits.PMOD   = 0b00; // Complementary
+    FCLCON1bits.FLTMOD = 0b11; //DEISABLE HBH
     uint16_t dt_counts = (uint16_t)((uint32_t)dt_ns * 118UL / 1000UL);
     if(dt_counts > 59) dt_counts = 59;   // clamp to 500ns max
-<<<<<<< Updated upstream
-    PWMCON1bits.DTC = 0b00; //set positive deadtime
-    PWMCON1bits.IUE = 0; //wait until PWM cycle ends to update
-    DTR1    = dt_counts;  
-    ALTDTR1 = dt_counts;
-    DTR2    = 0; 
-    ALTDTR2 = 0;
-    PWMCON1bits.MDCS  = 1;    //MASTER DUTY CYCLE! TO SYNC.
-    PWMCON1bits.ITB   = 0;    // PTPER do not use own time based register.
-
-=======
     //PWMCON1bits.DTC = 0b00; //set positive deadtime HBH
     //PWMCON1bits.IUE = 1; //wait until PWM cycle ends to update HBH
     DTR1    = dt_ns;
@@ -323,21 +234,10 @@ void PWM_Mode2(uint32_t freq, uint8_t duty, uint16_t dt_ns)
     //HBH PWMCON1bits.CAM=0; //CENTER AL;IGNED MODE =1 EDGE ALIGNED = 0
     // HBH PWMCON1bits.ITB   = 0;    // USE PTPER if ITB=0 (automatic edge align so ignore CAM if ITB=0)
     //IF ITB=0, use phase
->>>>>>> Stashed changes
 //PWM2 OVERRIDE
     IOCON2bits.PMOD   = 0b11; // NOT complementary --> indep mode]
-    IOCON2bits.PENH   = 1;    // PWM module owns pin
+    IOCON2bits.PENH   = 1;    
     IOCON2bits.PENL   = 1;
-<<<<<<< Updated upstream
-    IOCON2bits.OVRDAT = 0b11; // PWM2H = HIGH                         // PWM2L = HIGH //use overriden data
-    IOCON2bits.OVRENH = 1;    // Override hsS
-    IOCON2bits.OVRENL = 1;    // Override hsS
-    FCLCON2bits.FLTMOD = 0b11;
-    
-    
-    //INTERRUPT ENABLE
-    SEVTCMP            = 8;
-=======
     IOCON2bits.OVRDAT = 0b11; // PWM2H = HIGH                         // PWM2L = HIGH
     //use overriden data
     IOCON2bits.OVRENH = 1;    // Override hsS
@@ -345,7 +245,6 @@ void PWM_Mode2(uint32_t freq, uint8_t duty, uint16_t dt_ns)
     FCLCON2bits.FLTMOD = 0b11;
     //INTERRUPT ENABLE HBH
    SEVTCMP            = 8;
->>>>>>> Stashed changes
     PTCONbits.SEIEN    = 1;
     IFS4bits.PSESIF    = 0;
     IEC4bits.PSESIE    = 1;
