@@ -1,5 +1,6 @@
 #include "PWM.h"
 #include "xc.h"
+#include "uart.h"
 
 //PWM DEFINE VARIABLES
 #define FPWM            117920000UL
@@ -22,6 +23,77 @@ volatile uint8_t led_blink = 0;
 // globals
 static uint32_t current_freq = DEFAULT_FREQ;
 static uint8_t  current_duty = DEFAULT_DUTY;
+
+// ===== RAMP GLOBALS =====
+volatile uint8_t  pwm_ramp_active = 0;
+volatile uint32_t pwm_ramp_freq = 500000UL;
+volatile uint32_t pwm_ramp_target = 100000UL;
+volatile uint32_t pwm_ramp_step = 1000UL;     // 1 kHz per step
+volatile uint8_t  pwm_ramp_duty = 50UL;
+
+// Optional: choose the timer tick rate for updates
+// Example: every 10 us
+#define PWM_RAMP_TICK_US   10UL
+
+/*--------------------------------------------------------
+ * Call this ONLY from case 0x04
+ * Uses PWM1 interrupt (IEC5<14>, IFS5<14>, IPC23<10:8>)
+ *--------------------------------------------------------*/
+void AC_ZVS_ISR_Enable(void)
+{
+    IFS5bits.PWM1IF = 0;    // Clear any pending PWM1 flag
+    IPC23bits.PWM1IP = 4;   // Set priority (1-7, not 0)
+    IEC5bits.PWM1IE  = 1;   // Enable PWM1 interrupt
+}
+
+void AC_ZVS_ISR_Disable(void)
+{
+    IEC5bits.PWM1IE  = 0;   // Disable PWM1 interrupt
+    IFS5bits.PWM1IF  = 0;   // Clear flag
+    ac_zvs = 0;
+
+    // Disable AC-ZVS output pins here
+    // e.g., IOCONxbits.PENH = 0;
+    //        IOCONxbits.PENL = 0;
+}
+
+void ZeroCross_Init(void)
+{
+    ANSELAbits.ANSA0    = 1;        // Analog for CMP1A
+    TRISAbits.TRISA0    = 1;        // Input
+
+    CMP1CONbits.CMPON   = 0;        // Disable first
+    CMP1CONbits.INSEL   = 0b00;     // Select CMP1A = RA0 [1]
+    CMP1DAC             = 0x0800;   // Midpoint threshold
+    CMP1CONbits.CMPON   = 1;        // Enable [1]
+
+    // Exact registers from IVT [1]
+    // IFS1<2>, IEC1<2>, IPC4<10:8>
+    IFS1bits.AC1IF      = 0;        // Clear flag  ? bit 2 of IFS1
+    IPC4bits.AC1IP      = 6;        // Priority    ? IPC4<10:8>
+    IEC1bits.AC1IE      = 1;        // Enable      ? bit 2 of IEC1
+}
+
+void __attribute__((interrupt, no_auto_psv)) _PWM1Interrupt(void)
+{
+    if (ac_zvs) //IF THE SWITCH IS ON
+    {
+        if (CMP1CONbits.CMPSTAT == 1){ //RISING EDGE
+            
+        }
+        else{ //FALLING EDGE
+            
+        }
+    }
+    else
+    {
+        // Flag was cleared externally ? shut down
+        AC_ZVS_ISR_Disable();
+    }
+
+    IFS5bits.PWM1IF = 0;    // Always clear flag at end of ISR
+}
+
 
 void __attribute__((interrupt, no_auto_psv))
 _PWMSpEventMatchInterrupt(void)
@@ -319,6 +391,69 @@ _T1Interrupt(void)
 
     if(led_blink == 1) {
         LATBbits.LATB2 ^= 1;  // Toggle LED
+    }
+}
+void Timer2_Init(void)
+{
+    T2CONbits.TON = 0;
+    T2CONbits.TCS = 0;
+    T2CONbits.TGATE = 0;
+    T2CONbits.TCKPS = 0b00;   // 1:1 prescaler
+
+    TMR2 = 0;
+    PR2 = (uint16_t)((FCY / 100000UL) - 1)*8;  // example: 10 us tick if FCY=150MHz
+
+    IFS0bits.T2IF = 0;
+    IPC1bits.T2IP = 5;
+    IEC0bits.T2IE = 1;
+
+    T2CONbits.TON = 1;
+}
+
+void PWM_StartRamp(void)
+{
+    pwm_ramp_active = 1;
+    pwm_ramp_freq = 500000UL;
+
+    // Start immediately at 500 kHz
+    PWM_Update(pwm_ramp_freq, pwm_ramp_duty);
+
+    // Start Timer2 for ramp updates every 10 us
+    T2CONbits.TON = 0;
+    T2CONbits.TCS = 0;
+    T2CONbits.TGATE = 0;
+    T2CONbits.TCKPS = 0b00;   // 1:1
+
+    TMR2 = 0;
+    PR2 = (uint16_t)((FCY / (1000000UL / PWM_RAMP_TICK_US)) - 1)*8; // 10 us tick
+
+    IFS0bits.T2IF = 0; //TURN OFF FLAG FOR NOW, THE HARDWARE WILL SET THE FLAG
+    IPC1bits.T2IP = 5; //PRIORITY
+    IEC0bits.T2IE = 1; //ENABLE T2 INTERRUPT
+    T2CONbits.TON = 1; //START TIMER UNTIL COUNT TO PR2, THEN T2IF=1 JUMPS TO T2INTERRUPT
+}
+
+void __attribute__((interrupt, no_auto_psv))
+_T2Interrupt(void)
+{
+    IFS0bits.T2IF = 0; //SET FLAG OFF, INTERRUPT IS BEING RESOLVED
+
+    if (pwm_ramp_active)
+    {
+        if (pwm_ramp_freq > pwm_ramp_target + pwm_ramp_step)
+        {
+            pwm_ramp_freq -= pwm_ramp_step;
+            PWM_Update(pwm_ramp_freq, pwm_ramp_duty);
+        }
+        else
+        { //DONE WE HAVE REACHED THE TARGET FREQUENCY
+            pwm_ramp_freq = pwm_ramp_target;
+            PWM_Update(pwm_ramp_freq, pwm_ramp_duty);
+            
+            //STOP THE RAMP, KEEP STEADY
+            pwm_ramp_active = 0;
+            T2CONbits.TON = 0;
+        }
     }
 }
 

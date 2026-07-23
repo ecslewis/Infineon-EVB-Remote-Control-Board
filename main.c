@@ -119,11 +119,6 @@ while(1) {
         pwm_mode2_pending = 0;
     }
     
-    //AC-ZVS MODE
-    if (ac_zvs==1){
-        //FUNCTION DECLARATION here
-        ac_zvs=0;
-    }
     //RDSON MEASUREMENTS IN DC-ZVS
      if(rdson_cycle_done == 1) {
         rdson_cycle_done = 0;
