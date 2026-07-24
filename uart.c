@@ -202,7 +202,10 @@ void __attribute__((interrupt, no_auto_psv)) _U1RXInterrupt(void) {
                 new_dt_ns = ((uint16_t)rx_buf[7] << 8)
                              | rx_buf[8];
                 ac_zvs=1;
-                AC_ZVS_ISR_Enable();    
+                ac_zvs_half=0;
+                zc_state= ZC_IDLE;
+                ZC_KillAll();         // safe state
+                ZeroCross_Init();   
                 break;
             }
             case 0x05:          // MODE 1, simple pwm (mostly for testing purposes)

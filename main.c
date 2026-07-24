@@ -82,6 +82,7 @@ int main(void)
     IO_Init();
     UART_Init(); //no communication for now
     Timer1_Init();
+    
     //__delay_ms(10);
     //UART_SendByte(0xAA);  // send 0xAA continuously
     //PWM_Init(); //only enable the PWM signalsfrom the board
