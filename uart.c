@@ -233,6 +233,7 @@ void __attribute__((interrupt, no_auto_psv)) _U1RXInterrupt(void) {
             }
             case 0x14:          // STOP
                 led_blink        = 0;
+                ac_zvs=0;
                 PTCONbits.PTEN = 0;
                 LATBbits.LATB2 = 1;
                 LATBbits.LATB3 = 0;

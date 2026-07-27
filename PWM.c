@@ -18,6 +18,7 @@ volatile uint8_t  evb_status =0;
 volatile uint32_t saved_freq       = 0;
 volatile uint8_t  saved_duty       = 0;
 volatile uint8_t led_blink = 0;
+volatile ZC_State_t zc_state = ZC_IDLE;
 
 // globals
 static uint32_t current_freq = DEFAULT_FREQ;
@@ -132,10 +133,7 @@ void IO_Init(void)
         TRISBbits.TRISB3  = 0;  //set as output
         LATBbits.LATB3 = 0; //initially off
         ANSELBbits.ANSB0 = 0;       // Digital mode
-        TRISBbits.TRISB0 = 1;       // Input
-        
-        
-        //IOCON1bits.P //set to output pin pwm1H
+        TRISBbits.TRISB0 = 1;       // Inputs
 }
 void INT1_Init(void)
 {
@@ -150,24 +148,103 @@ void INT1_Init(void)
     IEC1bits.INT1IE     = 1;    // Enable
 }
 
+static void Timer3_LoadAndStart_200us(void)
+{
+    T3CONbits.TON   = 0;
+    T3CONbits.TCS   = 0;        // Internal FCY [1]
+    T3CONbits.TGATE = 0;
+    T3CONbits.TCKPS = 0b00;     // 1:1 prescaler [1]
+    TMR3            = 0;
+    // 200us @ FCY=39613750
+    // 39613750 * 0.0002 = 7922 counts
+    PR3             = 7922U;
+    IFS0bits.T3IF   = 0;
+    IPC2bits.T3IP   = 6;        // Priority 6 [1]
+    IEC0bits.T3IE   = 1;
+    T3CONbits.TON   = 1;
+}
 void __attribute__((interrupt, no_auto_psv)) _INT1Interrupt(void)
 {
-    IFS1bits.INT1IF = 0;        // Clear flag first
-    
-    // Read pin directly to know which edge just fired
-    uint8_t edge = PORTBbits.RB0;
-    
+    IFS1bits.INT1IF = 0;            // Clear flag [1]
+     if (!ac_zvs)
+        return;
+    uint8_t edge = PORTBbits.RB0;  // Read pin state
+
     if(edge == 1)
     {
-        LATBbits.LATB3 = 1;     // Rising edge  = LED ON
+        // Rising edge = positive half cycle
+        LATBbits.LATB3 = 1;         // LED ON
+
+        // Stop any running timer from previous cycle
+        T3CONbits.TON  = 0;
+        IEC0bits.T3IE  = 0;
+
+        // Kill PWM2 outputs before doing anything
+        IOCON2bits.OVRDAT = 0b00;   // Both LOW [1]
+        IOCON2bits.OVRENH = 1;      // Override ON [1]
+        IOCON2bits.OVRENL = 1;      // Override ON [1]
+
+        // Start 200us delay before turning PWM2 ON
+        zc_state = ZC_WAIT_DT1_ON;
+        Timer3_LoadAndStart_200us();
     }
     else
     {
-        LATBbits.LATB3 = 0;     // Falling edge = LED OFF
+        // Falling edge = negative half cycle
+        LATBbits.LATB3 = 0;         // LED OFF
+
+        // Stop everything
+        T3CONbits.TON     = 0;
+        IEC0bits.T3IE     = 0;
+
+        // Kill PWM2 immediately
+        IOCON2bits.OVRDAT = 0b00;
+        IOCON2bits.OVRENH = 1;
+        IOCON2bits.OVRENL = 1;
+
+        zc_state = ZC_IDLE;
     }
-    
-    // Toggle edge detect for next interrupt [1]
+
+    // Toggle edge for next interrupt [1]
     INTCON2bits.INT1EP ^= 1;
+}
+
+void __attribute__((interrupt, no_auto_psv)) _T3Interrupt(void)
+{
+    IFS0bits.T3IF = 0;          // Clear flag [1]
+    T3CONbits.TON = 0;          // Stop timer
+    IEC0bits.T3IE = 0;          // Disable
+
+    switch(zc_state)
+    {
+        case ZC_WAIT_DT1_ON:
+        {
+            // 200us expired - turn PWM2H and PWM2L constant HIGH
+            IOCON2bits.PMOD   = 0b11;   // Independent mode [1]
+            IOCON2bits.PENH   = 1;      // Pin owned by module [1]
+            IOCON2bits.PENL   = 1;
+            IOCON2bits.OVRDAT = 0b11;   // H=1, L=1 [1]
+            IOCON2bits.OVRENH = 1;      // Override ON [1]
+            IOCON2bits.OVRENL = 1;      // Override ON [1]
+
+            // Start second 200us delay
+            zc_state = ZC_WAIT_DT2_ON;
+            Timer3_LoadAndStart_200us();
+            break;
+        }
+
+        case ZC_WAIT_DT2_ON:
+        {
+            // 200us expired after PWM2 ON
+            // Nothing else for now - next steps come later
+            zc_state = ZC_IDLE;
+            break;
+        }
+
+        default:
+            zc_state = ZC_IDLE;
+            break;
+    }
 }
 void PWM_Init(void)
 {

@@ -4,13 +4,13 @@ Tool Name:
   c:\program files\microchip\xc16\v2.10\bin\bin\..\bin/elf-ld.exe
 
 Command:
-  -TC:\\Users\\lewise\\AppData\\Local\\Temp\\tmp00006a6c.00 \
-  -TC:\\Users\\lewise\\AppData\\Local\\Temp\\tmp00006a6c.01 \
-  -TC:\\Users\\lewise\\AppData\\Local\\Temp\\tmp00006a6c.02 \
-  -TC:\\Users\\lewise\\AppData\\Local\\Temp\\tmp00006a6c.03 \
-  -TC:\\Users\\lewise\\AppData\\Local\\Temp\\tmp00006a6c.04 \
-  -TC:\\Users\\lewise\\AppData\\Local\\Temp\\tmp00006a6c.05 \
-  -TC:\\Users\\lewise\\AppData\\Local\\Temp\\tmp00006a6c.06 \
+  -TC:\\Users\\lewise\\AppData\\Local\\Temp\\tmp000070f0.00 \
+  -TC:\\Users\\lewise\\AppData\\Local\\Temp\\tmp000070f0.01 \
+  -TC:\\Users\\lewise\\AppData\\Local\\Temp\\tmp000070f0.02 \
+  -TC:\\Users\\lewise\\AppData\\Local\\Temp\\tmp000070f0.03 \
+  -TC:\\Users\\lewise\\AppData\\Local\\Temp\\tmp000070f0.04 \
+  -TC:\\Users\\lewise\\AppData\\Local\\Temp\\tmp000070f0.05 \
+  -TC:\\Users\\lewise\\AppData\\Local\\Temp\\tmp000070f0.06 \
   -p33EP32GS502 \
   --mdfp=C:/Program Files/Microchip/MPLABX/v6.30/packs/Microchip/dsPIC33E-GS_DFP/1.5.302/xc16 \
   -o \
@@ -102,13 +102,13 @@ Default Scalar Model: Small
 
 section                    address   length (PC units)   length (bytes) (dec)
 -------                    -------   -----------------   --------------------
-.text                        0x200               0x3dc           0x5ca  (1482)
-.const                       0x5dc               0x200           0x300  (768)
-.text                        0x7dc               0x4f8           0x774  (1908)
-.dinit                       0xcd4                0x22            0x33  (51)
-.init.delay32                0xcf6                0x1c            0x2a  (42)
+.text                        0x200               0x4b0           0x708  (1800)
+.const                       0x6b0               0x200           0x300  (768)
+.text                        0x8b0               0x528           0x7bc  (1980)
+.dinit                       0xdd8                0x22            0x33  (51)
+.init.delay32                0xdfa                0x1c            0x2a  (42)
 
-                 Total "program" memory used (bytes):         0x109b  (4251) 12%
+                 Total "program" memory used (bytes):         0x1221  (4641) 14%
 
 
 "data" Memory  [Origin = 0x1000, Length = 0x1000]
@@ -122,11 +122,11 @@ reserve_data_0x1020         0x1020                 0x2             0x2  (2)
 reserve_data_0x1022         0x1022                 0x2             0x2  (2)
 reserve_data_0x1024         0x1024                 0x4             0x4  (4)
 reserve_data_0x1028         0x1028                0x28            0x28  (40)
-.nbss                       0x1050                   0            0x28  (40)
-.ndata                      0x1078                   0             0xc  (12)
-.nbss                       0x1084                   0             0x2  (2)
+.nbss                       0x1050                   0            0x2a  (42)
+.ndata                      0x107a                   0             0xc  (12)
+.nbss                       0x1086                   0             0x2  (2)
 
-                 Total "data" memory used (bytes):           0x86  (134) 3%
+                 Total "data" memory used (bytes):           0x88  (136) 3%
 
 
 Dynamic Memory Usage
@@ -134,9 +134,9 @@ Dynamic Memory Usage
 region                     address                      maximum length  (dec)
 ------                     -------                      ---------------------
 heap                             0                                   0  (0)
-stack                       0x1086                               0xf7a  (3962)
+stack                       0x1088                               0xf78  (3960)
 
-                 Maximum dynamic memory (bytes):          0xf7a  (3962)
+                 Maximum dynamic memory (bytes):          0xf78  (3960)
 
 Info: Project is using a large data memory model when small data memory model is sufficient.
 
@@ -157,22 +157,23 @@ External Symbols in Data Memory (by address):
                     0x1070                  _saved_freq
                     0x1074                  _saved_duty
                     0x1075                  _led_blink
-                    0x1078                  _new_freq
-                    0x107c                  _new_duty
-                    0x1084                  _blink_counter
+                    0x1076                  _zc_state
+                    0x107a                  _new_freq
+                    0x107e                  _new_duty
+                    0x1086                  _blink_counter
 
 External Symbols in Data Memory (by name):
 
                     0x1052                  _Uart_Fault_CNT
                     0x1056                  _ac_zvs
-                    0x1084                  _blink_counter
+                    0x1086                  _blink_counter
                     0x106f                  _evb_status
                     0x106b                  _freq_update_pending
                     0x1055                  _fw_version_pending
                     0x1075                  _led_blink
                     0x1050                  _new_dt_ns
-                    0x107c                  _new_duty
-                    0x1078                  _new_freq
+                    0x107e                  _new_duty
+                    0x107a                  _new_freq
                     0x106c                  _pwm_mode2_pending
                     0x106a                  _pwm_update_pending
                     0x106e                  _rdson_cycle_done
@@ -180,6 +181,7 @@ External Symbols in Data Memory (by name):
                     0x1074                  _saved_duty
                     0x1070                  _saved_freq
                     0x1054                  _send_message
+                    0x1076                  _zc_state
 
 External Symbols in Program Memory (by address):
 
@@ -188,52 +190,58 @@ External Symbols in Program Memory (by address):
                   0x000248                  __data_init_extended
                   0x000248                  __data_init
                   0x0002fa                  __PWMSpEventMatchInterrupt
-                  0x0003d6                  __T1Interrupt
-                  0x000400                  __U1RXInterrupt
-                  0x0005b6                  __DefaultInterrupt
-                  0x0005bc                  ___udivsi3
-                  0x0005dc                  _crc16Table
-                  0x0007dc                  _Clock_Init
-                  0x000850                  _IO_Init
-                  0x000872                  _PWM_Init
-                  0x000934                  _PWM_Update
-                  0x0009ce                  _PWM_Mode2
-                  0x000a7a                  _Timer1_Init
-                  0x000aa4                  _UART_SendByte
-                  0x000ac6                  _UART_Init
-                  0x000b1e                  _UART_SendStatus
-                  0x000b96                  _UART_SendFirmwareVersion
-                  0x000c14                  _CrcValueByteCalc
-                  0x000c60                  _main
-                  0x000cf6                  ___delay32
+                  0x0003da                  __INT1Interrupt
+                  0x000454                  __T3Interrupt
+                  0x0004a8                  __T1Interrupt
+                  0x0004d2                  __U1RXInterrupt
+                  0x00068a                  __DefaultInterrupt
+                  0x000690                  ___udivsi3
+                  0x0006b0                  _crc16Table
+                  0x0008b0                  _Clock_Init
+                  0x000922                  _IO_Init
+                  0x000948                  _INT1_Init
+                  0x00098c                  _PWM_Init
+                  0x000a4e                  _PWM_Update
+                  0x000ae8                  _PWM_Mode2
+                  0x000b82                  _Timer1_Init
+                  0x000bac                  _UART_SendByte
+                  0x000bce                  _UART_Init
+                  0x000c26                  _UART_SendStatus
+                  0x000c9e                  _UART_SendFirmwareVersion
+                  0x000d1c                  _CrcValueByteCalc
+                  0x000d68                  _main
+                  0x000dfa                  ___delay32
                   0x005780                  __FSEC.sec
 
 External Symbols in Program Memory (by name):
 
-                  0x0007dc                  _Clock_Init
-                  0x000c14                  _CrcValueByteCalc
-                  0x000850                  _IO_Init
-                  0x000872                  _PWM_Init
-                  0x0009ce                  _PWM_Mode2
-                  0x000934                  _PWM_Update
-                  0x000a7a                  _Timer1_Init
-                  0x000ac6                  _UART_Init
-                  0x000aa4                  _UART_SendByte
-                  0x000b96                  _UART_SendFirmwareVersion
-                  0x000b1e                  _UART_SendStatus
-                  0x0005b6                  __DefaultInterrupt
+                  0x0008b0                  _Clock_Init
+                  0x000d1c                  _CrcValueByteCalc
+                  0x000948                  _INT1_Init
+                  0x000922                  _IO_Init
+                  0x00098c                  _PWM_Init
+                  0x000ae8                  _PWM_Mode2
+                  0x000a4e                  _PWM_Update
+                  0x000b82                  _Timer1_Init
+                  0x000bce                  _UART_Init
+                  0x000bac                  _UART_SendByte
+                  0x000c9e                  _UART_SendFirmwareVersion
+                  0x000c26                  _UART_SendStatus
+                  0x00068a                  __DefaultInterrupt
                   0x005780                  __FSEC.sec
+                  0x0003da                  __INT1Interrupt
                   0x0002fa                  __PWMSpEventMatchInterrupt
-                  0x0003d6                  __T1Interrupt
-                  0x000400                  __U1RXInterrupt
-                  0x000cf6                  ___delay32
-                  0x0005bc                  ___udivsi3
+                  0x0004a8                  __T1Interrupt
+                  0x000454                  __T3Interrupt
+                  0x0004d2                  __U1RXInterrupt
+                  0x000dfa                  ___delay32
+                  0x000690                  ___udivsi3
                   0x000248                  __data_init
                   0x000248                  __data_init_extended
                   0x00023c                  __psv_init
                   0x000200                  __resetPRI
-                  0x0005dc                  _crc16Table
-                  0x000c60                  _main
+                  0x0006b0                  _crc16Table
+                  0x000d68                  _main
 
 Memory Configuration
 
@@ -328,7 +336,7 @@ LOAD c:/program files/microchip/xc16/v2.10/bin/bin/../../lib\libfx-elf.a
                   0x000002          0x2 SHORT 0x0 ((ABSOLUTE (__reset) >> 0x10) & 0x7f)
                   0x000003          0x2 SHORT 0x0
 
-.text             0x000200        0x3dc
+.text             0x000200        0x4b0
  *(.init)
  .init            0x000200         0x48 c:/program files/microchip/xc16/v2.10/bin/bin/../../lib\libc99-pic30-elf.a(crt0_extendedep.o)
                   0x000200                  __resetPRI
@@ -340,23 +348,25 @@ LOAD c:/program files/microchip/xc16/v2.10/bin/bin/../../lib\libfx-elf.a
  *(.user_init)
  *(.handle)
  *(.isr*)
- .isr.text        0x0002fa        0x106 build/default/debug/PWM.o
+ .isr.text        0x0002fa        0x1d8 build/default/debug/PWM.o
                   0x0002fa                  __PWMSpEventMatchInterrupt
-                  0x0003d6                  __T1Interrupt
- .isr.text        0x000400        0x1b6 build/default/debug/uart.o
-                  0x000400                  __U1RXInterrupt
- .isr             0x0005b6          0x4 default_isr
-                  0x0005b6                  __DefaultInterrupt
+                  0x0003da                  __INT1Interrupt
+                  0x000454                  __T3Interrupt
+                  0x0004a8                  __T1Interrupt
+ .isr.text        0x0004d2        0x1b8 build/default/debug/uart.o
+                  0x0004d2                  __U1RXInterrupt
+ .isr             0x00068a          0x4 default_isr
+                  0x00068a                  __DefaultInterrupt
  *(.libc)
  *(.libm)
  *(.libdsp)
  *(.lib*)
  .libpic30_crt_start_mode
-                  0x0005ba          0x2 c:/program files/microchip/xc16/v2.10/bin/bin/../../lib\libc99-pic30-elf.a(crt_start_mode_normalep.Meo)
-                  0x0005ba                  __crt_start_mode
-                  0x0005ba                  __crt_start_mode_normal
- .libm.udivsi3    0x0005bc         0x20 c:/program files/microchip/xc16/v2.10/bin/bin/../../lib\libc99-pic30-elf.a(udivsi3.EP_o)
-                  0x0005bc                  ___udivsi3
+                  0x00068e          0x2 c:/program files/microchip/xc16/v2.10/bin/bin/../../lib\libc99-pic30-elf.a(crt_start_mode_normalep.Meo)
+                  0x00068e                  __crt_start_mode
+                  0x00068e                  __crt_start_mode_normal
+ .libm.udivsi3    0x000690         0x20 c:/program files/microchip/xc16/v2.10/bin/bin/../../lib\libc99-pic30-elf.a(udivsi3.EP_o)
+                  0x000690                  ___udivsi3
 
 usercode
  *(usercode)
@@ -396,39 +406,39 @@ __FALTREG
 .comment
  *(.comment)
 
-.debug_info       0x000000       0x4896
+.debug_info       0x000000       0x53ac
  *(.debug_info)
  .debug_info      0x000000        0x62f build/default/debug/main.o
- .debug_info      0x00062f       0x281d build/default/debug/PWM.o
- .debug_info      0x002e4c       0x19bd build/default/debug/uart.o
- .debug_info      0x004809         0x8d c:/program files/microchip/xc16/v2.10/bin/bin/../../lib\libc99-pic30-elf.a(udivsi3.EP_o)
+ .debug_info      0x00062f       0x3333 build/default/debug/PWM.o
+ .debug_info      0x003962       0x19bd build/default/debug/uart.o
+ .debug_info      0x00531f         0x8d c:/program files/microchip/xc16/v2.10/bin/bin/../../lib\libc99-pic30-elf.a(udivsi3.EP_o)
  *(.gnu.linkonce.wi.*)
 
-.debug_abbrev     0x000000        0x473
+.debug_abbrev     0x000000        0x4c4
  *(.debug_abbrev)
  .debug_abbrev    0x000000        0x10b build/default/debug/main.o
- .debug_abbrev    0x00010b        0x174 build/default/debug/PWM.o
- .debug_abbrev    0x00027f        0x1e0 build/default/debug/uart.o
- .debug_abbrev    0x00045f         0x14 c:/program files/microchip/xc16/v2.10/bin/bin/../../lib\libc99-pic30-elf.a(udivsi3.EP_o)
+ .debug_abbrev    0x00010b        0x1c5 build/default/debug/PWM.o
+ .debug_abbrev    0x0002d0        0x1e0 build/default/debug/uart.o
+ .debug_abbrev    0x0004b0         0x14 c:/program files/microchip/xc16/v2.10/bin/bin/../../lib\libc99-pic30-elf.a(udivsi3.EP_o)
 
-.debug_line       0x000000        0x53f
+.debug_line       0x000000        0x594
  *(.debug_line)
  .debug_line      0x000000        0x139 build/default/debug/main.o
- .debug_line      0x000139        0x1e2 build/default/debug/PWM.o
- .debug_line      0x00031b        0x1df build/default/debug/uart.o
- .debug_line      0x0004fa         0x45 c:/program files/microchip/xc16/v2.10/bin/bin/../../lib\libc99-pic30-elf.a(udivsi3.EP_o)
+ .debug_line      0x000139        0x236 build/default/debug/PWM.o
+ .debug_line      0x00036f        0x1e0 build/default/debug/uart.o
+ .debug_line      0x00054f         0x45 c:/program files/microchip/xc16/v2.10/bin/bin/../../lib\libc99-pic30-elf.a(udivsi3.EP_o)
 
-.debug_frame      0x000000        0x214
+.debug_frame      0x000000        0x2c4
  *(.debug_frame)
  .debug_frame     0x000000         0x2e build/default/debug/main.o
- .debug_frame     0x00002e        0x112 build/default/debug/PWM.o
- .debug_frame     0x000140         0xd4 build/default/debug/uart.o
+ .debug_frame     0x00002e        0x1c2 build/default/debug/PWM.o
+ .debug_frame     0x0001f0         0xd4 build/default/debug/uart.o
 
-.debug_str        0x000000        0x306
+.debug_str        0x000000        0x35e
  *(.debug_str)
  .debug_str       0x000000         0xa0 build/default/debug/main.o
- .debug_str       0x0000a0        0x152 build/default/debug/PWM.o
- .debug_str       0x0001f2        0x114 build/default/debug/uart.o
+ .debug_str       0x0000a0        0x1aa build/default/debug/PWM.o
+ .debug_str       0x00024a        0x114 build/default/debug/uart.o
 
 .debug_loc
  *(.debug_loc)
@@ -437,14 +447,14 @@ __FALTREG
  *(.debug_macinfo)
 
 .debug_pubnames
-                  0x000000        0x272
+                  0x000000        0x2b1
  *(.debug_pubnames)
  .debug_pubnames
                   0x000000         0x2d build/default/debug/main.o
  .debug_pubnames
-                  0x00002d        0x157 build/default/debug/PWM.o
+                  0x00002d        0x196 build/default/debug/PWM.o
  .debug_pubnames
-                  0x000184         0xee build/default/debug/uart.o
+                  0x0001c3         0xee build/default/debug/uart.o
 
 .debug_ranges
  *(.debug_ranges)
@@ -1704,39 +1714,39 @@ LOAD default_isr
 LOAD data_init
 
 .debug_pubtypes
-                  0x000068        0x537
+                  0x000068        0x63c
  .debug_pubtypes
                   0x000068         0x74 build/default/debug/main.o
  .debug_pubtypes
-                  0x0000dc        0x319 build/default/debug/PWM.o
+                  0x0000dc        0x41e build/default/debug/PWM.o
  .debug_pubtypes
-                  0x0003f5        0x1aa build/default/debug/uart.o
+                  0x0004fa        0x1aa build/default/debug/uart.o
 
 __c30_signature
-                  0x00059f         0x2a
+                  0x0006a4         0x2a
  __c30_signature
-                  0x00059f          0x6 build/default/debug/main.o
+                  0x0006a4          0x6 build/default/debug/main.o
  __c30_signature
-                  0x0005a5          0x6 build/default/debug/PWM.o
+                  0x0006aa          0x6 build/default/debug/PWM.o
  __c30_signature
-                  0x0005ab          0x6 build/default/debug/uart.o
+                  0x0006b0          0x6 build/default/debug/uart.o
  __c30_signature
-                  0x0005b1          0x6 c:/program files/microchip/xc16/v2.10/bin/bin/../../lib\libc99-pic30-elf.a(crt0_extendedep.o)
+                  0x0006b6          0x6 c:/program files/microchip/xc16/v2.10/bin/bin/../../lib\libc99-pic30-elf.a(crt0_extendedep.o)
  __c30_signature
-                  0x0005b7          0x6 c:/program files/microchip/xc16/v2.10/bin/bin/../../lib\libc99-pic30-elf.a(data_init_extended.o)
+                  0x0006bc          0x6 c:/program files/microchip/xc16/v2.10/bin/bin/../../lib\libc99-pic30-elf.a(data_init_extended.o)
  __c30_signature
-                  0x0005bd          0x6 c:/program files/microchip/xc16/v2.10/bin/bin/../../lib\libc99-pic30-elf.a(delay32ep.Meo)
+                  0x0006c2          0x6 c:/program files/microchip/xc16/v2.10/bin/bin/../../lib\libc99-pic30-elf.a(delay32ep.Meo)
  __c30_signature
-                  0x0005c3          0x6 c:/program files/microchip/xc16/v2.10/bin/bin/../../lib\libc99-pic30-elf.a(udivsi3.EP_o)
+                  0x0006c8          0x6 c:/program files/microchip/xc16/v2.10/bin/bin/../../lib\libc99-pic30-elf.a(udivsi3.EP_o)
 
-.nbss               0x1050         0x28
+.nbss               0x1050         0x2a
  .nbss              0x1050         0x1a build/default/debug/uart.o
                     0x1050                  _new_dt_ns
                     0x1052                  _Uart_Fault_CNT
                     0x1054                  _send_message
                     0x1055                  _fw_version_pending
                     0x1056                  _ac_zvs
- .nbss              0x106a          0xe build/default/debug/PWM.o
+ .nbss              0x106a         0x10 build/default/debug/PWM.o
                     0x106a                  _pwm_update_pending
                     0x106b                  _freq_update_pending
                     0x106c                  _pwm_mode2_pending
@@ -1746,15 +1756,16 @@ __c30_signature
                     0x1070                  _saved_freq
                     0x1074                  _saved_duty
                     0x1075                  _led_blink
+                    0x1076                  _zc_state
 
-.ndata              0x1078          0xc
- .ndata             0x1078          0xc build/default/debug/PWM.o
-                    0x1078                  _new_freq
-                    0x107c                  _new_duty
+.ndata              0x107a          0xc
+ .ndata             0x107a          0xc build/default/debug/PWM.o
+                    0x107a                  _new_freq
+                    0x107e                  _new_duty
 
-.nbss               0x1084          0x2
- .nbss              0x1084          0x2 build/default/debug/main.o
-                    0x1084                  _blink_counter
+.nbss               0x1086          0x2
+ .nbss              0x1086          0x2 build/default/debug/main.o
+                    0x1086                  _blink_counter
 
 .config_CTXT2     0x0057b0          0x2
  .config_CTXT2    0x0057b0          0x2 build/default/debug/main.o
@@ -1784,6 +1795,16 @@ __c30_signature
  .ivt._PWMSpEventMatchInterrupt
                   0x000086          0x2 build/default/debug/PWM.o
 
+.ivt._INT1Interrupt
+                  0x00003c          0x2
+ .ivt._INT1Interrupt
+                  0x00003c          0x2 build/default/debug/PWM.o
+
+.ivt._T3Interrupt
+                  0x000024          0x2
+ .ivt._T3Interrupt
+                  0x000024          0x2 build/default/debug/PWM.o
+
 .ivt._T1Interrupt
                   0x00001a          0x2
  .ivt._T1Interrupt
@@ -1794,30 +1815,31 @@ __c30_signature
  .ivt._U1RXInterrupt
                   0x00002a          0x2 build/default/debug/uart.o
 
-.const              0x85dc        0x200 load address 0x0005dc  
- .const             0x85dc        0x200 build/default/debug/uart.o
-                    0x85dc                  _crc16Table
+.const              0x86b0        0x200 load address 0x0006b0  
+ .const             0x86b0        0x200 build/default/debug/uart.o
+                    0x86b0                  _crc16Table
 
-.text             0x0007dc        0x4f8
- .text            0x0007dc        0x2c8 build/default/debug/PWM.o
-                  0x0007dc                  _Clock_Init
-                  0x000850                  _IO_Init
-                  0x000872                  _PWM_Init
-                  0x000934                  _PWM_Update
-                  0x0009ce                  _PWM_Mode2
-                  0x000a7a                  _Timer1_Init
- .text            0x000aa4        0x1bc build/default/debug/uart.o
-                  0x000aa4                  _UART_SendByte
-                  0x000ac6                  _UART_Init
-                  0x000b1e                  _UART_SendStatus
-                  0x000b96                  _UART_SendFirmwareVersion
-                  0x000c14                  _CrcValueByteCalc
- .text            0x000c60         0x74 build/default/debug/main.o
-                  0x000c60                  _main
+.text             0x0008b0        0x528
+ .text            0x0008b0        0x2fc build/default/debug/PWM.o
+                  0x0008b0                  _Clock_Init
+                  0x000922                  _IO_Init
+                  0x000948                  _INT1_Init
+                  0x00098c                  _PWM_Init
+                  0x000a4e                  _PWM_Update
+                  0x000ae8                  _PWM_Mode2
+                  0x000b82                  _Timer1_Init
+ .text            0x000bac        0x1bc build/default/debug/uart.o
+                  0x000bac                  _UART_SendByte
+                  0x000bce                  _UART_Init
+                  0x000c26                  _UART_SendStatus
+                  0x000c9e                  _UART_SendFirmwareVersion
+                  0x000d1c                  _CrcValueByteCalc
+ .text            0x000d68         0x70 build/default/debug/main.o
+                  0x000d68                  _main
 
-.dinit            0x000cd4         0x22
- .dinit           0x000cd4         0x22 data_init
+.dinit            0x000dd8         0x22
+ .dinit           0x000dd8         0x22 data_init
 
-.init.delay32     0x000cf6         0x1c
- .init.delay32    0x000cf6         0x1c c:/program files/microchip/xc16/v2.10/bin/bin/../../lib\libc99-pic30-elf.a(delay32ep.Meo)
-                  0x000cf6                  ___delay32
+.init.delay32     0x000dfa         0x1c
+ .init.delay32    0x000dfa         0x1c c:/program files/microchip/xc16/v2.10/bin/bin/../../lib\libc99-pic30-elf.a(delay32ep.Meo)
+                  0x000dfa                  ___delay32
