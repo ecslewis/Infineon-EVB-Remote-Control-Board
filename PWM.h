@@ -32,5 +32,6 @@ void IO_Init(void);
 void PWM_Update(uint32_t freq, uint8_t duty);
 void PWM_Mode2(uint32_t freq, uint8_t duty, uint16_t dt_ns);
 void Timer1_Init(void);
+void INT1_Init(void);
 
 #endif 

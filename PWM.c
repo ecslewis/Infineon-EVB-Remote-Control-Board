@@ -131,9 +131,43 @@ void IO_Init(void)
         ANSELBbits.ANSB3  = 0;   // Disable analog
         TRISBbits.TRISB3  = 0;  //set as output
         LATBbits.LATB3 = 0; //initially off
+        ANSELBbits.ANSB0 = 0;       // Digital mode
+        TRISBbits.TRISB0 = 1;       // Input
         
         
         //IOCON1bits.P //set to output pin pwm1H
+}
+void INT1_Init(void)
+{
+    // Map INT1 to RP32 = RB0 = Pin 5 [1]
+    RPINR0bits.INT1R    = 32;
+    
+    // Start by detecting rising edge first [1]
+    INTCON2bits.INT1EP  = 0;    // 0 = rising edge [1]
+    
+    IFS1bits.INT1IF     = 0;    // Clear flag
+    IPC5bits.INT1IP     = 6;    // Priority 6
+    IEC1bits.INT1IE     = 1;    // Enable
+}
+
+void __attribute__((interrupt, no_auto_psv)) _INT1Interrupt(void)
+{
+    IFS1bits.INT1IF = 0;        // Clear flag first
+    
+    // Read pin directly to know which edge just fired
+    uint8_t edge = PORTBbits.RB0;
+    
+    if(edge == 1)
+    {
+        LATBbits.LATB3 = 1;     // Rising edge  = LED ON
+    }
+    else
+    {
+        LATBbits.LATB3 = 0;     // Falling edge = LED OFF
+    }
+    
+    // Toggle edge detect for next interrupt [1]
+    INTCON2bits.INT1EP ^= 1;
 }
 void PWM_Init(void)
 {

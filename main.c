@@ -80,6 +80,7 @@ int main(void)
     
    Clock_Init();
     IO_Init();
+    INT1_Init();
     UART_Init(); //no communication for now
     Timer1_Init();
     //__delay_ms(10);
