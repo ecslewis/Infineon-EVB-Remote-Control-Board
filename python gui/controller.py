@@ -193,18 +193,24 @@ class RS485Controller:
     # CMD 0x03 - MODE 1
     # Packet: [0xAB][0xAA][0x04][0x03][FH][FL][Duty][CRCH][CRCL][0xCD]
     # ──────────────────────────────────────────
-    def pwm_mode1(self, freq_khz: int, duty: int) -> bool:
-        if not (1 <= freq_khz <= 500): return False
-        if not (0 <= duty     <= 100): return False
+    def pwm_mode1(self,
+                  freq_khz   : int,
+                  duty       : int,
+                  deadtime_ns: int = 0) -> bool:
+        if not (1 <= freq_khz    <= 500): return False
+        if not (0 <= duty        <= 100): return False
+        if not (0 <= deadtime_ns <= 500): return False
 
-        freq_h = (freq_khz >> 8) & 0xFF
-        freq_l =  freq_khz       & 0xFF
+        freq_h = (freq_khz    >> 8) & 0xFF
+        freq_l =  freq_khz          & 0xFF
+        dt_h   = (deadtime_ns >> 8) & 0xFF
+        dt_l   =  deadtime_ns       & 0xFF
 
         packet = self._build_packet(
-            0x05,
-            [freq_h, freq_l, duty]
+            0x04,
+            [freq_h, freq_l, duty, dt_h, dt_l]
         )
-        print(f"DEBUG: PWM mode 1 set frequency:{freq_khz}kHz, duty:{duty}%")
+        print(f"DEBUG: PWM mode 1 set frequency:{freq_khz}kHz, duty:{duty}%, deadtime: {deadtime_ns}ns")
         return self._transmit(packet)
 
     # ──────────────────────────────────────────

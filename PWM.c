@@ -279,19 +279,60 @@ void AC_ZVS_ISR_Disable(void)
 // ===================================================================
 void ZeroCross_Init(void)
 {
-    ANSELAbits.ANSA0  = 1;         // Keep analog for CMP1A on RA0
-    TRISAbits.TRISA0  = 1;         // Set as input
+    // RA0 must be ANALOG mode for CMP1A to receive the signal
+    // Even though the signal is digital 0/3.3V
+    // the CMP1A input path requires ANSA0=1 [1]
+    ANSELAbits.ANSA0   = 1;        // Analog mode ? required for CMP1A [1]
+    TRISAbits.TRISA0   = 1;        // Input
 
-    CMP1CONbits.CMPON = 0;         // Disable before configuring
-    CMP1CONbits.INSEL = 0b00;      // Select CMP1A = RA0 [1]
-    CMP1DAC           = 0x0800;    // Midpoint threshold = AVDD/2
-    CMP1CONbits.CMPON = 1;         // Enable comparator [1]
+    CMP1CONbits.CMPON  = 0;        // Disable before config
 
-    // CMP1 interrupt registers from IVT [1]
-    // IFS1<2>, IEC1<2>, IPC4<10:8>
-    IFS1bits.AC1IF    = 0;         // Clear flag
-    IPC4bits.AC1IP    = 7;         // Highest priority
-    IEC1bits.AC1IE    = 1;         // Enable ? fires on every edge
+    // Select which pin feeds the comparator non-inverting input
+    // INSEL<1:0> from CMPxCON register [1]:
+    // 0b00 = CMP1A = RA0  ? your zero crossing signal
+    // 0b01 = CMP1B = RA1  ? if you wanted RA1 instead
+    CMP1CONbits.INSEL  = 0b00;     // RA0 = CMP1A [1]
+
+    // ALTINP must be 0 so INSEL selects comparator inputs [1]
+    CMP1CONbits.ALTINP = 0;
+
+    // Output polarity ? non-inverted [1]
+    // CMPSTAT=1 means RA0 > DAC threshold = RA0 is HIGH = 3.3V
+    CMP1CONbits.CMPPOL = 0;
+
+    // RANGE=1 means AVDD is max DAC voltage [1]
+    // DO NOT leave RANGE=0 ? datasheet says "unimplemented, do not use" [1]
+    CMP1CONbits.RANGE  = 1;
+
+    // DAC threshold = AVDD/2 = midpoint between 0V and 3.3V
+    // Your signal swings 0V to 3.3V (= AVDD)
+    // So AVDD/2 sits perfectly in the middle
+    // 0x0800 = 2048 out of 4096 = exactly half [1]
+    CMP1DAC            = 0x0800;
+
+    // Optional: enable filter to reject noise spikes [1]
+    CMP1CONbits.FLTREN = 0;
+
+    // HYSSEL<1:0> = 0b10 = 20mV hysteresis [1]
+    CMP1CONbits.HYSSEL1 = 1;
+    CMP1CONbits.HYSSEL0 = 0;
+
+    // HYSPOL = 0 = apply on rising edge [1]
+    CMP1CONbits.HYSPOL  = 0;
+    // Enable comparator
+    CMP1CONbits.CMPON  = 1;
+
+    // Wait for comparator to settle before arming interrupt
+    // Otherwise startup glitch fires a false ISR
+    volatile uint16_t i;
+    for(i = 0; i < 1000; i++){ asm("nop"); }
+
+    // Clear any false flag from startup
+    IFS1bits.AC1IF = 0;
+
+    // CMP1 interrupt: IFS1<2>, IEC1<2>, IPC4<10:8> [1]
+    IPC4bits.AC1IP = 7;            // Highest priority
+    IEC1bits.AC1IE = 1;            // Enable ? fires on every edge
 }
 
 // ===================================================================
@@ -309,39 +350,38 @@ void ZeroCross_Init(void)
 // ===================================================================
 void __attribute__((interrupt, no_auto_psv)) _CMP1Interrupt(void)
 {
-    IFS1bits.AC1IF = 0;            // Clear flag FIRST [1]
-    if (!ac_zvs)
-        return;                    // Only process if AC-ZVS mode active
+    // [CHANGED] Read CMPSTAT FIRST before clearing flag
+    // Clearing flag first can cause a race condition where
+    // CMPSTAT is read after the next edge has already occurred
+    uint8_t edge = CMP1CONbits.CMPSTAT;   // snapshot edge direction
 
-    // Stop everything from previous half cycle instantly
+    IFS1bits.AC1IF = 0;                    // Clear flag AFTER reading [1]
+
+    if (!ac_zvs)
+        return;
+
+    // Stop everything from previous half cycle
     T3CONbits.TON   = 0;
     IEC0bits.T3IE   = 0;
     T2CONbits.TON   = 0;
     IEC0bits.T2IE   = 0;
     pwm_ramp_active = 0;
 
-    // Kill all outputs instantly via override
     ZC_KillAll();
 
-    // CMPSTAT = 1 means comparator output went HIGH = rising edge [1]
-    if (CMP1CONbits.CMPSTAT == 1)
+    if (edge == 1)
     {
-        // RISING EDGE ? entering positive half cycle
-        // LF = GHH(PWM2L) + GLH(PWM2H) will be constant HIGH
-        // HF = GHL(PWM1H) + GLL(PWM1L) will be switching
-        ac_zvs_half = 1;
+        LATBbits.LATB3 = 1;        // LED ON = positive half
+        ac_zvs_half    = 1;
     }
     else
     {
-        // FALLING EDGE ? entering negative half cycle
-        // LF = GHL(PWM1H) + GLL(PWM1L) will be constant HIGH
-        // HF = GHH(PWM2L) + GLH(PWM2H) will be switching
-        ac_zvs_half = 0;
+        LATBbits.LATB3 = 0;        // LED OFF = negative half
+        ac_zvs_half    = 0;
     }
 
-    // Start Dt1 = 200us delay ? nothing turns on yet
     zc_state = ZC_WAIT_DT1_ON;
-    Timer3_LoadAndStart(ZC_DT_200US_COUNTS, 0b00);  // 1:1 prescaler
+    Timer3_LoadAndStart(ZC_DT_200US_COUNTS, 0b00);
 }
 
 // ===================================================================

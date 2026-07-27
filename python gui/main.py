@@ -153,7 +153,7 @@ class App:
         mode_row.pack(fill="x", pady=(0, 8))
         self.btn_mode1 = tk.Button(
             mode_row,
-            text             = "Mode 1\nComplementary PWM",
+            text             = "Mode 1\nAC_ZVS PWM",
             font             = self.f_btn,
             bg               = self.DARK,
             fg               = "#FFFFFF",
@@ -477,7 +477,7 @@ class App:
             return
         if self.ctrl.pwm_mode1(freq, duty):
             self.status.config(
-                text = f"Mode 1 active  ·  {freq} kHz  ·  {duty}% duty",
+                text = f"Mode 1 active AC-ZVS  ·  {freq} kHz  ·  {duty}% duty",
                 fg   = self.GREEN
             )
         else:
