@@ -195,6 +195,7 @@ void __attribute__((interrupt, no_auto_psv)) _U1RXInterrupt(void) {
             }
             case 0x04: //AC-ZVS
             {
+                pwm_mode2_pending = 1;
                 ac_zvs=1;
                 break;
             }
