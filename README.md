@@ -30,7 +30,8 @@
 
 This project provides embedded firmware running on a **dsPIC microcontroller** paired with
 a **Python-based host interface** for full remote control of the
-**Infineon 900V Bridge Driver Stage Evaluation Board**.
+**Infineon 900V Bridge Driver Stage Evaluation Board**. This control system has a precision of **1.04ns**, making it highly reliable in high-frequency power electronics. 
+The converter used in this project is GaN-based, hence promoting the emergence of GaN in power electronics.
 
 The system is designed around high-frequency power conversion research, enabling engineers
 to remotely configure, tune and monitor switching behaviour without physical access to the
@@ -44,7 +45,7 @@ clean command interface for frequency sweeps, duty cycle changes and mode switch
 Supported control platforms:
 - ⚡ **ACZVS** – AC Zero Voltage Switching
 - ⚡ **DCZVS** – DC Zero Voltage Switching
-- ⚡ **DyR**   – Dynamic Rectification
+- ⚡ **DyR**   – Dynamic Rdson Measurement
 
 > Compatible with **unidirectional devices only**
 
@@ -263,21 +264,19 @@ BDS_CONTROL.X/
 ├── PWM.h               # PWM function prototypes and defines
 ├── UART.c              # RS-485 UART transmit and receive
 ├── UART.h              # UART function prototypes
-├── Clock.c             # PLL and auxiliary clock initialisation
-├── IO.c                # GPIO and pin configuration
 │
 ├── main.py             # Python host control interface
+├── controller.py       #host control backend
 │
 └── README.md           # This file
 ```
 
 ---
 
-## Known Limitations
+## Limitations
 
 - ⚠️ **No closed loop control** — frequency and duty are open loop, set manually by user
 - ⚠️ **RS-485 polarity sensitive** — swapped A+/B- will result in no communication
-- ⚠️ **Dead-time clamped at 500ns** — hardware limit enforced in firmware
 
 ---
 
@@ -285,7 +284,7 @@ BDS_CONTROL.X/
 
 - Always apply **12V supply before** launching Python interface
 - Confirm **LED heartbeat is blinking** before sending any commands
-- RS-485 cable should be **twisted pair** for best noise immunity in lab environments
+- RS-485 cable should be **twisted pair** for best noise immunity in lab environments even as a differential pairing tool
 - Keep RS-485 cable away from **gate drive lines** to avoid coupling noise into comms
 - When switching modes, allow **at least one PWM cycle** before sending the next command
 - All frequency values are in **Hz** (e.g. 100000 = 100kHz)
