@@ -37,6 +37,8 @@ typedef enum {
             ZC_WAIT_DT2_OFF=4,
             ZC_WAIT_DT3_OFF=5,
             ZC_WAIT_DT4_OFF=6,
+            ZC_WAIT_DT4_ON=7,
+    ZC_WAIT_DT3_ON=8,
 } ZC_State_t;
 
 extern volatile ZC_State_t zc_state;

@@ -280,7 +280,33 @@ void __attribute__((interrupt, no_auto_psv)) _T3Interrupt(void)
             // Make sure PWM timebase is running
             PTCONbits.PTEN = 1;
 
+            zc_state = ZC_WAIT_DT4_ON;
+            Timer3_LoadAndStart_12ms();
+            break;
+        }
+        case ZC_WAIT_DT3_ON:
+        {
+            // Kill PWM2 immediately
+            IOCON2bits.PMOD   = 0b11;
+            IOCON2bits.PENH   = 1;
+            IOCON2bits.PENL   = 1;
+            IOCON2bits.OVRDAT = 0b00;
+            IOCON2bits.OVRENH = 1;
+            IOCON2bits.OVRENL = 1;
             zc_state = ZC_IDLE;
+            break;
+        }
+        case ZC_WAIT_DT4_ON:
+        {
+            // Kill PWM1 immediately
+            IOCON1bits.PMOD   = 0b11;
+            IOCON1bits.PENH   = 1;
+            IOCON1bits.PENL   = 1;
+            IOCON1bits.OVRDAT = 0b00;
+            IOCON1bits.OVRENH = 1;
+            IOCON1bits.OVRENL = 1;
+            zc_state = ZC_WAIT_DT3_ON;
+            Timer3_LoadAndStart_200us();
             break;
         }
         case  ZC_WAIT_DT1_OFF:
@@ -310,7 +336,7 @@ void __attribute__((interrupt, no_auto_psv)) _T3Interrupt(void)
             // Make sure PWM timebase is running
             PTCONbits.PTEN = 1;
 
-            zc_state = ZC_WAIT_DT3_OFF;
+            zc_state = ZC_WAIT_DT3_ON;
             Timer3_LoadAndStart_12ms();
             break;
         }
