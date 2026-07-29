@@ -12,6 +12,7 @@ extern volatile uint8_t  new_duty           = DEFAULT_DUTY;
 volatile uint8_t  pwm_update_pending = 0;
 volatile uint8_t freq_update_pending = 0;
 volatile uint8_t pwm_mode2_pending =0;
+volatile uint8_t pwm_mode_pending=0;
 volatile uint8_t  rdson_pending    = 0;
 volatile uint8_t  rdson_cycle_done = 0;
 volatile uint8_t  evb_status =0;
@@ -195,29 +196,31 @@ void __attribute__((interrupt, no_auto_psv)) _INT1Interrupt(void)
     else
     {
         // Falling edge = negative half cycle
-        LATBbits.LATB3 = 0;         // LED OFF
+        LATBbits.LATB3 = 0;
 
         // Stop timer
         T3CONbits.TON  = 0;
         IEC0bits.T3IE  = 0;
 
-        // Force PWM1 HIGH continuously
-        IOCON1bits.PMOD   = 0b11;   // independent mode
+        // Kill PWM1 immediately
+        IOCON1bits.PMOD   = 0b11;
         IOCON1bits.PENH   = 1;
         IOCON1bits.PENL   = 1;
-        IOCON1bits.OVRDAT = 0b11;   // both high
+        IOCON1bits.OVRDAT = 0b00;
         IOCON1bits.OVRENH = 1;
         IOCON1bits.OVRENL = 1;
 
-        // Kill PWM2
+        // Kill PWM2 immediately
         IOCON2bits.PMOD   = 0b11;
         IOCON2bits.PENH   = 1;
         IOCON2bits.PENL   = 1;
-        IOCON2bits.OVRDAT = 0b00;   // both low
+        IOCON2bits.OVRDAT = 0b00;
         IOCON2bits.OVRENH = 1;
         IOCON2bits.OVRENL = 1;
 
-        zc_state = ZC_IDLE;
+        // Start 200us delay before turning PWM1 ON
+        zc_state = ZC_WAIT_DT1_OFF;
+        Timer3_LoadAndStart_200us();
     }
 
     // Toggle edge for next interrupt [1]
@@ -257,6 +260,36 @@ void __attribute__((interrupt, no_auto_psv)) _T3Interrupt(void)
             IOCON1bits.PENL   = 1;
             IOCON1bits.OVRENH = 0;
             IOCON1bits.OVRENL = 0;
+
+            // Make sure PWM timebase is running
+            PTCONbits.PTEN = 1;
+
+            zc_state = ZC_IDLE;
+            break;
+        }
+        case  ZC_WAIT_DT1_OFF:
+        {
+            // Force PWM1 HIGH continuously
+            IOCON1bits.PMOD   = 0b11;   // independent mode
+            IOCON1bits.PENH    = 1;
+            IOCON1bits.PENL    = 1;
+            IOCON1bits.OVRDAT  = 0b11;   // both high
+            IOCON1bits.OVRENH  = 1;
+            IOCON1bits.OVRENL  = 1;
+            
+            // Start second 200us delay
+            zc_state = ZC_WAIT_DT2_OFF;
+            Timer3_LoadAndStart_200us();
+            break;
+        }
+        case ZC_WAIT_DT2_OFF:
+        {  
+            // Let PWM2 switch normally again
+            IOCON2bits.PMOD   = 0b00;   // complementary PWM
+            IOCON2bits.PENH   = 1;
+            IOCON2bits.PENL   = 1;
+            IOCON2bits.OVRENH = 0;
+            IOCON2bits.OVRENL = 0;
 
             // Make sure PWM timebase is running
             PTCONbits.PTEN = 1;
@@ -374,7 +407,45 @@ void PWM_Update(uint32_t freq, uint8_t duty)
     //PWM ENABLE
     PTCONbits.PTEN      = 1;   
 }
+void PWM_Mode(uint32_t freq, uint8_t duty, uint16_t dt_ns)
+{
+    PTCONbits.PTEN  = 0;
 
+    uint16_t period  = (uint16_t)((FPWM / freq) - 1) * 8;
+    uint16_t compare = (uint16_t)((uint32_t)period * duty / 100);
+
+    PTPER = period;
+    PDC1  = compare;
+    PDC2  = compare;
+
+    // PWM1 setup
+    IOCON1bits.PENH    = 1;
+    IOCON1bits.PENL    = 1;
+    IOCON1bits.PMOD    = 0b00;   // complementary PWM
+    FCLCON1bits.FLTMOD = 0b11;   // disable fault
+    DTR1               = dt_ns;
+    ALTDTR1            = dt_ns;
+
+    // PWM2 setup - normal PWM, no override
+    IOCON2bits.PMOD    = 0b00;   // complementary PWM
+    IOCON2bits.PENH    = 1;
+    IOCON2bits.PENL    = 1;
+    IOCON2bits.OVRENH  = 0;      // no override
+    IOCON2bits.OVRENL  = 0;      // no override
+    IOCON2bits.OVRDAT  = 0b00;
+    FCLCON2bits.FLTMOD = 0b11;   // disable fault
+    DTR2               = dt_ns;
+    ALTDTR2            = dt_ns;
+
+    // PWM interrupt settings
+    SEVTCMP          = 8;
+    PTCONbits.SEIEN  = 1;
+    IFS3bits.PSEMIF  = 0;
+    IEC3bits.PSEMIE  = 1;
+    IPC14bits.PSEMIP = 4;
+
+    PTCONbits.PTEN = 1;
+}
 void PWM_Mode2(uint32_t freq, uint8_t duty, uint16_t dt_ns)
 {
     PTCONbits.PTEN  = 0;      

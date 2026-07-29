@@ -119,6 +119,10 @@ while(1) {
         PWM_Mode2(new_freq, new_duty, new_dt_ns);
         pwm_mode2_pending = 0;
     }
+    if(pwm_mode_pending == 1) {
+        PWM_Mode(new_freq, new_duty, new_dt_ns);
+        pwm_mode_pending = 0;
+    }
     
     //AC-ZVS MODE
     if (ac_zvs==1){
