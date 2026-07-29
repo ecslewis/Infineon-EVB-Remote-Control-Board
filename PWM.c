@@ -178,7 +178,11 @@ void __attribute__((interrupt, no_auto_psv)) _INT1Interrupt(void)
         // Stop any running timer from previous cycle
         T3CONbits.TON  = 0;
         IEC0bits.T3IE  = 0;
-
+        
+        //KILL PWM1
+        IOCON1bits.OVRDAT = 0b00;
+        IOCON1bits.OVRENH  = 1;
+        IOCON1bits.OVRENL  = 1;
         // Kill PWM2 outputs before doing anything
         IOCON2bits.OVRDAT = 0b00;   // Both LOW [1]
         IOCON2bits.OVRENH = 1;      // Override ON [1]
@@ -196,7 +200,10 @@ void __attribute__((interrupt, no_auto_psv)) _INT1Interrupt(void)
         // Stop everything
         T3CONbits.TON     = 0;
         IEC0bits.T3IE     = 0;
-
+       //KILL PWM1
+        IOCON1bits.OVRDAT = 0b00;
+        IOCON1bits.OVRENH  = 1;
+        IOCON1bits.OVRENL  = 1;
         // Kill PWM2 immediately
         IOCON2bits.OVRDAT = 0b00;
         IOCON2bits.OVRENH = 1;
@@ -233,10 +240,19 @@ void __attribute__((interrupt, no_auto_psv)) _T3Interrupt(void)
             break;
         }
 
-        case ZC_WAIT_DT2_ON:
+       case ZC_WAIT_DT2_ON:
         {
             // 200us expired after PWM2 ON
-            // Nothing else for now - next steps come later
+            // Enable PWM1 outputs as real PWM
+            IOCON1bits.PMOD   = 0b00;   // Complementary PWM
+            IOCON1bits.PENH   = 1;
+            IOCON1bits.PENL   = 1;
+            IOCON1bits.OVRENH = 0;
+            IOCON1bits.OVRENL = 0;
+
+            // Make sure PWM timebase is running
+            PTCONbits.PTEN = 1;
+
             zc_state = ZC_IDLE;
             break;
         }
