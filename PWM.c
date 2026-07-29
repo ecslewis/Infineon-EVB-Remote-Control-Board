@@ -148,7 +148,23 @@ void INT1_Init(void)
     IPC5bits.INT1IP     = 6;    // Priority 6
     IEC1bits.INT1IE     = 1;    // Enable
 }
+static void Timer3_LoadAndStart_12ms(void)
+{
+    T3CONbits.TON   = 0;
+    T3CONbits.TCS   = 0;
+    T3CONbits.TGATE = 0;
+    T3CONbits.TCKPS = 0b11;   // 1:256 prescaler
+    TMR3            = 0;
 
+    // 12ms @ FCY=39613750 with 1:256 prescaler
+    // (39613750 / 256) * 0.012 ? 1857
+    PR3             = 1417U;
+
+    IFS0bits.T3IF   = 0;
+    IPC2bits.T3IP   = 6;
+    IEC0bits.T3IE   = 1;
+    T3CONbits.TON   = 1;
+}
 static void Timer3_LoadAndStart_200us(void)
 {
     T3CONbits.TON   = 0;
@@ -294,10 +310,36 @@ void __attribute__((interrupt, no_auto_psv)) _T3Interrupt(void)
             // Make sure PWM timebase is running
             PTCONbits.PTEN = 1;
 
-            zc_state = ZC_IDLE;
+            zc_state = ZC_WAIT_DT3_OFF;
+            Timer3_LoadAndStart_12ms();
             break;
         }
-
+        case ZC_WAIT_DT4_OFF:
+        {
+            // Kill PWM1 immediately
+            IOCON1bits.PMOD   = 0b11;
+            IOCON1bits.PENH   = 1;
+            IOCON1bits.PENL   = 1;
+            IOCON1bits.OVRDAT = 0b00;
+            IOCON1bits.OVRENH = 1;
+            IOCON1bits.OVRENL = 1;
+            zc_state = ZC_IDLE;
+            break;
+            
+        }
+        case ZC_WAIT_DT3_OFF:
+        {
+            // Kill PWM2 immediately
+            IOCON2bits.PMOD   = 0b11;
+            IOCON2bits.PENH   = 1;
+            IOCON2bits.PENL   = 1;
+            IOCON2bits.OVRDAT = 0b00;
+            IOCON2bits.OVRENH = 1;
+            IOCON2bits.OVRENL = 1;
+            zc_state = ZC_WAIT_DT4_OFF;
+            Timer3_LoadAndStart_200us();
+            break;
+        }
         default:
             zc_state = ZC_IDLE;
             break;

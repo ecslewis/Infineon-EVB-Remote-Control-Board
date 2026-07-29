@@ -35,6 +35,8 @@ typedef enum {
     ZC_WAIT_DT2_ON  = 2,    // 200us after PWM2 ON
     ZC_WAIT_DT1_OFF = 3,
             ZC_WAIT_DT2_OFF=4,
+            ZC_WAIT_DT3_OFF=5,
+            ZC_WAIT_DT4_OFF=6,
 } ZC_State_t;
 
 extern volatile ZC_State_t zc_state;
@@ -43,6 +45,7 @@ void PWM_Init(void);
 void Clock_Init(void);
 void IO_Init(void);
 void PWM_Update(uint32_t freq, uint8_t duty);
+static void Timer3_LoadAndStart_12ms(void);
 static void Timer3_LoadAndStart_200us(void);
 void PWM_Mode(uint32_t freq, uint8_t duty, uint16_t dt_ns);
 void PWM_Mode2(uint32_t freq, uint8_t duty, uint16_t dt_ns);
