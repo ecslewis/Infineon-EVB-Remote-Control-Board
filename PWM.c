@@ -197,15 +197,23 @@ void __attribute__((interrupt, no_auto_psv)) _INT1Interrupt(void)
         // Falling edge = negative half cycle
         LATBbits.LATB3 = 0;         // LED OFF
 
-        // Stop everything
-        T3CONbits.TON     = 0;
-        IEC0bits.T3IE     = 0;
-       //KILL PWM1
-        IOCON1bits.OVRDAT = 0b00;
-        IOCON1bits.OVRENH  = 1;
-        IOCON1bits.OVRENL  = 1;
-        // Kill PWM2 immediately
-        IOCON2bits.OVRDAT = 0b00;
+        // Stop timer
+        T3CONbits.TON  = 0;
+        IEC0bits.T3IE  = 0;
+
+        // Force PWM1 HIGH continuously
+        IOCON1bits.PMOD   = 0b11;   // independent mode
+        IOCON1bits.PENH   = 1;
+        IOCON1bits.PENL   = 1;
+        IOCON1bits.OVRDAT = 0b11;   // both high
+        IOCON1bits.OVRENH = 1;
+        IOCON1bits.OVRENL = 1;
+
+        // Kill PWM2
+        IOCON2bits.PMOD   = 0b11;
+        IOCON2bits.PENH   = 1;
+        IOCON2bits.PENL   = 1;
+        IOCON2bits.OVRDAT = 0b00;   // both low
         IOCON2bits.OVRENH = 1;
         IOCON2bits.OVRENL = 1;
 
