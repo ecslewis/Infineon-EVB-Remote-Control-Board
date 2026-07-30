@@ -526,6 +526,8 @@ void PWM_Mode2(uint32_t freq, uint8_t duty, uint16_t dt_ns)
     //MDC    = compare; HBH
     //hi
 
+    IOCON1bits.OVRENH = 0;
+    IOCON1bits.OVRENL = 0;
     //IOCON1bits.OVRENH = 0;    // PWM module drives PWM1H HBH
     //IOCON1bits.OVRENL = 0;    // PWM module drives PWM1L HBH
     IOCON1bits.PENH   = 1;
