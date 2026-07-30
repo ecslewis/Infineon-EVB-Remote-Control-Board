@@ -512,7 +512,7 @@ void PWM_Mode(uint32_t freq, uint8_t duty, uint16_t dt_ns)
     IEC3bits.PSEMIE  = 1;
     IPC14bits.PSEMIP = 4;
 
-    PTCONbits.PTEN = 1;
+    PTCONbits.PTEN = 0;
 }
 void PWM_Mode2(uint32_t freq, uint8_t duty, uint16_t dt_ns)
 {
