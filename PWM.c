@@ -295,15 +295,14 @@ void __attribute__((interrupt, no_auto_psv)) _T2Interrupt(void)
     uint16_t period  = (uint16_t)((FPWM / pwm_ramp_current_freq) - 1)*8;
     uint16_t compare = (uint16_t)((uint32_t)period * pwm_ramp_duty / 100);
 
-    PTCONbits.PTEN = 0;
+    PWMCON1bits.IUE = 1;
+    PWMCON2bits.IUE = 1;
     PTPER = period;
 
     if(pwm_ramp_channel == 1)
         PDC1 = compare;
     else
         PDC2 = compare;
-
-    PTCONbits.PTEN = 1;
 
     if(pwm_ramp_current_freq > pwm_ramp_target_freq)
     {
@@ -348,8 +347,11 @@ void __attribute__((interrupt, no_auto_psv)) _T3Interrupt(void)
             IOCON1bits.PENL   = 1;
             IOCON1bits.OVRENH = 0;
             IOCON1bits.OVRENL = 0;
-
             // Make sure PWM timebase is running
+            PTPER=1879;
+            PDC1=939;
+            PDC2=939;
+            
             PTCONbits.PTEN = 1;
 
             zc_state = ZC_WAIT_DT4_ON;
@@ -405,7 +407,9 @@ void __attribute__((interrupt, no_auto_psv)) _T3Interrupt(void)
             IOCON2bits.PENL   = 1;
             IOCON2bits.OVRENH = 0;
             IOCON2bits.OVRENL = 0;
-
+             PTPER=1879;
+             PDC2=939;
+             PDC1=939;
             // Make sure PWM timebase is running
             PTCONbits.PTEN = 1;
 
