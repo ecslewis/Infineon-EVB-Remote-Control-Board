@@ -193,7 +193,7 @@ static void Timer2_LoadAndStart_20us(void)
     T2CONbits.TGATE = 0;
     T2CONbits.TCKPS = 0b00;
     TMR2            = 0;
-    PR2             = 792U;   // 20 us @ FCY 39.61375 MHz
+    PR2             = 22U;   // 20 us @ FCY 39.61375 MHz
     IFS0bits.T2IF   = 0;
     IPC1bits.T2IP   = 6;
     IEC0bits.T2IE   = 1;
@@ -288,7 +288,7 @@ void __attribute__((interrupt, no_auto_psv)) _T2Interrupt(void)
         return;
 
     if(pwm_ramp_current_freq > (pwm_ramp_target_freq + 1000UL))
-        pwm_ramp_current_freq -= 10000UL;
+        pwm_ramp_current_freq -= 2000UL;
     else
         pwm_ramp_current_freq = pwm_ramp_target_freq;
 
@@ -369,6 +369,7 @@ void __attribute__((interrupt, no_auto_psv)) _T3Interrupt(void)
             IOCON2bits.OVRENH = 1;
             IOCON2bits.OVRENL = 1;
             zc_state = ZC_IDLE;
+            Timer3_LoadAndStart_200us();
             break;
         }
         case ZC_WAIT_DT4_ON:
@@ -413,7 +414,7 @@ void __attribute__((interrupt, no_auto_psv)) _T3Interrupt(void)
             // Make sure PWM timebase is running
             PTCONbits.PTEN = 1;
 
-            zc_state = ZC_WAIT_DT3_ON;
+            zc_state = ZC_WAIT_DT3_OFF;
             PWM2_StartRampDown(new_freq, new_duty);
             Timer3_LoadAndStart_12ms();
             break;
@@ -428,6 +429,7 @@ void __attribute__((interrupt, no_auto_psv)) _T3Interrupt(void)
             IOCON1bits.OVRENH = 1;
             IOCON1bits.OVRENL = 1;
             zc_state = ZC_IDLE;
+            Timer3_LoadAndStart_200us();
             break;
             
         }
