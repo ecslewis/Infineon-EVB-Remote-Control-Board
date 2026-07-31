@@ -193,7 +193,7 @@ static void Timer2_LoadAndStart_20us(void)
     T2CONbits.TGATE = 0;
     T2CONbits.TCKPS = 0b00;
     TMR2            = 0;
-    PR2             = 22U;   // 20 us @ FCY 39.61375 MHz
+    PR2             = 2U;   // 20 us @ FCY 39.61375 MHz
     IFS0bits.T2IF   = 0;
     IPC1bits.T2IP   = 6;
     IEC0bits.T2IE   = 1;
@@ -203,7 +203,7 @@ void PWM1_StartRampDown(uint32_t target_freq, uint8_t duty)
 {
     pwm_ramp_channel     = 1;
     pwm_ramp_target_freq = target_freq;
-    pwm_ramp_current_freq = 500000UL;
+    pwm_ramp_current_freq = 400000UL;
     pwm_ramp_duty        = duty;
     pwm_ramp_active      = 1;
     Timer2_LoadAndStart_20us();
@@ -213,7 +213,7 @@ void PWM2_StartRampDown(uint32_t target_freq, uint8_t duty)
 {
     pwm_ramp_channel     = 2;
     pwm_ramp_target_freq = target_freq;
-    pwm_ramp_current_freq = 500000UL;
+    pwm_ramp_current_freq = 400000UL;
     pwm_ramp_duty        = duty;
     pwm_ramp_active      = 1;
     Timer2_LoadAndStart_20us();
@@ -288,7 +288,7 @@ void __attribute__((interrupt, no_auto_psv)) _T2Interrupt(void)
         return;
 
     if(pwm_ramp_current_freq > (pwm_ramp_target_freq + 1000UL))
-        pwm_ramp_current_freq -= 2000UL;
+        pwm_ramp_current_freq -= 8000UL;
     else
         pwm_ramp_current_freq = pwm_ramp_target_freq;
 
@@ -331,7 +331,6 @@ void __attribute__((interrupt, no_auto_psv)) _T3Interrupt(void)
             IOCON2bits.OVRDAT = 0b11;   // H=1, L=1 [1]
             IOCON2bits.OVRENH = 1;      // Override ON [1]
             IOCON2bits.OVRENL = 1;      // Override ON [1]
-
             // Start second 200us delay
             zc_state = ZC_WAIT_DT2_ON;
             Timer3_LoadAndStart_200us();
@@ -347,6 +346,7 @@ void __attribute__((interrupt, no_auto_psv)) _T3Interrupt(void)
             IOCON1bits.PENL   = 1;
             IOCON1bits.OVRENH = 0;
             IOCON1bits.OVRENL = 0;
+            
             // Make sure PWM timebase is running
             PTPER=1879;
             PDC1=939;
