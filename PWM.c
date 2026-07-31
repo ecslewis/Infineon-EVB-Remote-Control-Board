@@ -288,11 +288,11 @@ void __attribute__((interrupt, no_auto_psv)) _T2Interrupt(void)
         return;
 
     if(pwm_ramp_current_freq > (pwm_ramp_target_freq + 1000UL))
-        pwm_ramp_current_freq -= 1000UL;
+        pwm_ramp_current_freq -= 10000UL;
     else
         pwm_ramp_current_freq = pwm_ramp_target_freq;
 
-    uint16_t period  = (uint16_t)((FPWM / pwm_ramp_current_freq) - 1);
+    uint16_t period  = (uint16_t)((FPWM / pwm_ramp_current_freq) - 1)*8;
     uint16_t compare = (uint16_t)((uint32_t)period * pwm_ramp_duty / 100);
 
     PTCONbits.PTEN = 0;
