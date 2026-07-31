@@ -21,6 +21,12 @@ volatile uint8_t  saved_duty       = 0;
 volatile uint8_t led_blink = 0;
 volatile ZC_State_t zc_state = ZC_IDLE;
 
+//ramp
+volatile uint8_t  pwm_ramp_active = 0;
+volatile uint8_t  pwm_ramp_channel = 0; // 1 = PWM1, 2 = PWM2
+volatile uint32_t pwm_ramp_target_freq  = DEFAULT_FREQ;
+volatile uint32_t pwm_ramp_current_freq = 500000UL;
+volatile uint8_t  pwm_ramp_duty = DEFAULT_DUTY;
 // globals
 static uint32_t current_freq = DEFAULT_FREQ;
 static uint8_t  current_duty = DEFAULT_DUTY;
@@ -180,6 +186,38 @@ static void Timer3_LoadAndStart_200us(void)
     IEC0bits.T3IE   = 1;
     T3CONbits.TON   = 1;
 }
+static void Timer2_LoadAndStart_20us(void)
+{
+    T2CONbits.TON   = 0;
+    T2CONbits.TCS   = 0;
+    T2CONbits.TGATE = 0;
+    T2CONbits.TCKPS = 0b00;
+    TMR2            = 0;
+    PR2             = 792U;   // 20 us @ FCY 39.61375 MHz
+    IFS0bits.T2IF   = 0;
+    IPC1bits.T2IP   = 6;
+    IEC0bits.T2IE   = 1;
+    T2CONbits.TON   = 1;
+}
+void PWM1_StartRampDown(uint32_t target_freq, uint8_t duty)
+{
+    pwm_ramp_channel     = 1;
+    pwm_ramp_target_freq = target_freq;
+    pwm_ramp_current_freq = 500000UL;
+    pwm_ramp_duty        = duty;
+    pwm_ramp_active      = 1;
+    Timer2_LoadAndStart_20us();
+}
+
+void PWM2_StartRampDown(uint32_t target_freq, uint8_t duty)
+{
+    pwm_ramp_channel     = 2;
+    pwm_ramp_target_freq = target_freq;
+    pwm_ramp_current_freq = 500000UL;
+    pwm_ramp_duty        = duty;
+    pwm_ramp_active      = 1;
+    Timer2_LoadAndStart_20us();
+}
 void __attribute__((interrupt, no_auto_psv)) _INT1Interrupt(void)
 {
     IFS1bits.INT1IF = 0;            // Clear flag [1]
@@ -242,7 +280,41 @@ void __attribute__((interrupt, no_auto_psv)) _INT1Interrupt(void)
     // Toggle edge for next interrupt [1]
     INTCON2bits.INT1EP ^= 1;
 }
+void __attribute__((interrupt, no_auto_psv)) _T2Interrupt(void)
+{
+    IFS0bits.T2IF = 0;
 
+    if(!pwm_ramp_active)
+        return;
+
+    if(pwm_ramp_current_freq > (pwm_ramp_target_freq + 1000UL))
+        pwm_ramp_current_freq -= 1000UL;
+    else
+        pwm_ramp_current_freq = pwm_ramp_target_freq;
+
+    uint16_t period  = (uint16_t)((FPWM / pwm_ramp_current_freq) - 1);
+    uint16_t compare = (uint16_t)((uint32_t)period * pwm_ramp_duty / 100);
+
+    PTCONbits.PTEN = 0;
+    PTPER = period;
+
+    if(pwm_ramp_channel == 1)
+        PDC1 = compare;
+    else
+        PDC2 = compare;
+
+    PTCONbits.PTEN = 1;
+
+    if(pwm_ramp_current_freq > pwm_ramp_target_freq)
+    {
+        Timer2_LoadAndStart_20us();
+    }
+    else
+    {
+        pwm_ramp_active = 0;
+        T2CONbits.TON = 0;
+    }
+}
 void __attribute__((interrupt, no_auto_psv)) _T3Interrupt(void)
 {
     IFS0bits.T3IF = 0;          // Clear flag [1]
@@ -281,6 +353,7 @@ void __attribute__((interrupt, no_auto_psv)) _T3Interrupt(void)
             PTCONbits.PTEN = 1;
 
             zc_state = ZC_WAIT_DT4_ON;
+            PWM1_StartRampDown(new_freq, new_duty);
             Timer3_LoadAndStart_12ms();
             break;
         }
@@ -337,6 +410,7 @@ void __attribute__((interrupt, no_auto_psv)) _T3Interrupt(void)
             PTCONbits.PTEN = 1;
 
             zc_state = ZC_WAIT_DT3_ON;
+            PWM2_StartRampDown(new_freq, new_duty);
             Timer3_LoadAndStart_12ms();
             break;
         }
@@ -477,9 +551,10 @@ void PWM_Update(uint32_t freq, uint8_t duty)
 }
 void PWM_Mode(uint32_t freq, uint8_t duty, uint16_t dt_ns)
 {
+    (void)freq;
     PTCONbits.PTEN  = 0;
 
-    uint16_t period  = (uint16_t)((FPWM / freq) - 1) * 8;
+    uint16_t period  = (uint16_t)((FPWM / 500000UL) - 1) * 8;
     uint16_t compare = (uint16_t)((uint32_t)period * duty / 100);
 
     PTPER = period;
