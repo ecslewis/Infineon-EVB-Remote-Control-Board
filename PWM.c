@@ -151,7 +151,7 @@ void INT1_Init(void)
     INTCON2bits.INT1EP  = 0;    // 0 = rising edge [1]
     
     IFS1bits.INT1IF     = 0;    // Clear flag
-    IPC5bits.INT1IP     = 6;    // Priority 6
+    IPC5bits.INT1IP     = 7;    // Priority 6
     IEC1bits.INT1IE     = 1;    // Enable
 }
 static void Timer3_LoadAndStart_12ms(void)
@@ -331,6 +331,16 @@ void __attribute__((interrupt, no_auto_psv)) _T3Interrupt(void)
             IOCON2bits.OVRDAT = 0b11;   // H=1, L=1 [1]
             IOCON2bits.OVRENH = 1;      // Override ON [1]
             IOCON2bits.OVRENL = 1;      // Override ON [1]
+            //KILL PWM1
+            IOCON1bits.PMOD   = 0b11;
+            IOCON1bits.PENH   = 1;
+            IOCON1bits.PENL   = 1;
+            IOCON1bits.OVRDAT = 0b00;
+            IOCON1bits.OVRENH = 1;
+            IOCON1bits.OVRENL = 1;
+            
+            //ENABLE
+            PTCONbits.PTEN = 1;
             // Start second 200us delay
             zc_state = ZC_WAIT_DT2_ON;
             Timer3_LoadAndStart_200us();
