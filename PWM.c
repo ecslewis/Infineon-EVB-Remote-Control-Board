@@ -1,6 +1,8 @@
 #include "PWM.h"
 #include "xc.h"
 
+
+//RB12 GL AND RB11 GH
 //PWM DEFINE VARIABLES
 #define FPWM            117920000UL
 #define DEFAULT_FREQ    100000UL          // 100kHz
@@ -42,7 +44,7 @@ _PWMSpEventMatchInterrupt(void)
         case 0:                     // Normal operation -> go to 50kHz for 1 cycle
             if(rdson_pending == 1) {
                 rdson_pending = 0;
-
+                
                 // Save current settings
                 saved_freq = new_freq;
                 saved_duty = new_duty;
@@ -52,30 +54,47 @@ _PWMSpEventMatchInterrupt(void)
                 uint16_t compare = (uint16_t)((uint32_t)period
                                     * saved_duty / 100);
                 //PTCONbits.PTEN   = 0;
-                LATBbits.LATB3 = 1; //turn on LED
                 PTPER            = period;
                 //PHASE1           = period;
                 //PHASE2           = period;
+                
                 MDC              = compare;
                 PDC1             = compare;
+                PDC3=compare;
                 PDC2             = compare;
                 //PTCONbits.PTEN   = 1;
                 SEVTCMP         = period - 8;
-                
+                LATBbits.LATB3 = 1; //turn on LED
                 rdson_state      = 1;
+                IOCON3bits.SWAP=1;
+                IOCON3bits.OVRENH = 0;
+                IOCON3bits.OVRENL = 0;
+                IOCON3bits.PENH   = 1;
+                IOCON3bits.PENL   = 1;
+                IOCON3bits.PMOD   = 0b00; // Complementary
+                PWMCON3bits.IUE = 0;
+                
+                
             }
             break;
 
         case 1:                     // 50kHz cycle done, go back to normal now
             {
+//                IOCON3bits.PMOD   = 0b11; // NOT complementary --> indep mode]
+//                IOCON3bits.PENH   = 1;    
+//                IOCON3bits.PENL   = 1;
+//                IOCON3bits.OVRDAT = 0b01; // PWM2H = HIGH                         // PWM2L = HIGH 
+//                //use overriden data
+//                IOCON3bits.OVRENH = 1;    // Override hsS
+//                IOCON3bits.OVRENL = 1;    // Override hsS
                 // restor old frequency
                 PWMCON1bits.IUE = 0;
+                PWMCON3bits.IUE = 0;
                 LATBbits.LATB3 = 1; //turn on LED
                 uint16_t period  = (uint16_t)((FPWM / saved_freq) - 1)*8;
                 uint16_t compare = (uint16_t)((uint32_t)period
                                     * saved_duty / 100);
-                //PTCONbits.PTEN   = 0;
-                
+                //PTCONbits.PTEN   = 0
                 PTPER            = period;
                 //PHASE1           = period;
                 //PHASE2           = period;
@@ -631,6 +650,10 @@ void PWM_Mode2(uint32_t freq, uint8_t duty, uint16_t dt_ns)
     //PWMCON1bits.IUE = 1; //wait until PWM cycle ends to update HBH
     DTR1    = dt_ns;
     ALTDTR1 = dt_ns;
+    DTR3    = dt_ns;
+    ALTDTR3 = dt_ns;
+    DTR2    = dt_ns;
+    ALTDTR2 = dt_ns;
     //DTR2    = 0; HBH
     //ALTDTR2 = 0; HBH
     // HBH PWMCON1bits.MDCS  = 0;    //MDC
@@ -647,6 +670,17 @@ void PWM_Mode2(uint32_t freq, uint8_t duty, uint16_t dt_ns)
     IOCON2bits.OVRENH = 1;    // Override hsS
     IOCON2bits.OVRENL = 1;    // Override hsS
     FCLCON2bits.FLTMOD = 0b11;
+    
+ //SET PWM3 GL AND GH
+    
+    IOCON3bits.PMOD   = 0b11; // NOT complementary --> indep mode]
+    IOCON3bits.PENH   = 1;    
+    IOCON3bits.PENL   = 1;
+    IOCON3bits.OVRDAT = 0b01; // PWM2H = HIGH                         // PWM2L = HIGH 
+    //use overriden data
+    IOCON3bits.OVRENH = 1;    // Override hsS
+    IOCON3bits.OVRENL = 1;    // Override hsS
+    FCLCON3bits.FLTMOD = 0b11;
     
     
     //INTERRUPT ENABLE HBH

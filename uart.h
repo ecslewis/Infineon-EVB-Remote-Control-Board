@@ -13,9 +13,9 @@
 #define BAUD_RATE    9600UL
 
 //UPDATE FW VERSION!!
-#define FW_VERSION_MAJOR  1
+#define FW_VERSION_MAJOR  2
 #define FW_VERSION_MINOR  0
-#define FW_VERSION_PATCH  1
+#define FW_VERSION_PATCH  0
 
 extern volatile uint16_t Uart_Fault_CNT;
 extern volatile uint8_t  send_message;
