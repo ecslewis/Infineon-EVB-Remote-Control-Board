@@ -46,69 +46,44 @@ _PWMSpEventMatchInterrupt(void)
 
     switch(rdson_state)
     {
-    /* ------------------------------------------------------------------
-     * Fires at the start of the last high-frequency cycle.
-     * Everything written here latches at the period boundary, so the
-     * NEXT period is the 50 kHz one.
-     * ---------------------------------------------------------------- */
+    /* Arm only. Give PHASE3 a full period to settle before the slow cycle. */
     case 0:
         if(rdson_pending == 1)
         {
+            //IOCON3bits.SWAP=1;
             rdson_pending = 0;
-            saved_freq    = new_freq;
-            saved_duty    = new_duty;
-
-            uint16_t per  = (uint16_t)((FPWM / 50000UL) - 1) * 8;
-            uint16_t duty = (uint16_t)((uint32_t)per * saved_duty / 100);
-
-            PTPER = per;
-            PDC1  = duty;
-            MDC   = duty;
-
-            /* PWM1L rises at PDC1 + ALTDTR1. DTR3 delays PWM3H by 100 ns
-             * after the PWM3 cycle start, so pull the phase back by DTR3:
-             * PWM3L then falls 100 ns before PWM3H rises, and PWM3H rises
-             * exactly on the PWM1L edge. */
-            uint16_t ph = duty + ALTDTR1;
-            ph = (ph > DT_100NS) ? (uint16_t)(ph - DT_100NS) : 0;
-            PHASE3 = ph;
-
-            /* PWM3H falls 100 ns before the period ends, so ALTDTR3 brings
-             * PWM3L back up exactly at the boundary where the override
-             * re-engages. No fight between the two.
-             * If you want PWM3H and PWM1L to fall together instead, drop the
-             * "- DT_100NS" and delay the override by one more period. */
-            PDC3 = (uint16_t)(per - ph - DT_100NS);
-
-            IOCON3bits.OVRENH = 0;   /* OSYNC hands the pins to the module */
-            IOCON3bits.OVRENL = 0;   /* at the start of the 50 kHz cycle   */
-
-            LATBbits.LATB3 = 1;
-            rdson_state    = 1;
+            PHASE3 = rd_phase3;
+            PDC3   = rd_pdc3;
+            rdson_state = 1;
         }
         break;
 
-    /* ------------------------------------------------------------------
-     * Fires at the START of the single 50 kHz cycle. Restoring here means
-     * the cycle after this one is already back to normal.
-     * ---------------------------------------------------------------- */
+    /* One period later: switch to 50 kHz and release the clamp override.
+     * Both latch at the boundary, so the NEXT period is the slow one. */
     case 1:
-        {
-            uint16_t per  = (uint16_t)((FPWM / saved_freq) - 1) * 8;
-            uint16_t duty = (uint16_t)((uint32_t)per * saved_duty / 100);
+        PTPER = rd_slow_per;
+        PDC1  = rd_slow_duty;
+        MDC   = rd_slow_duty;
+        IOCON3bits.OVRENH = 0;
+        IOCON3bits.OVRENL = 0;
+        LATBbits.LATB3 = 1;
+        rdson_state = 2;
+        break;
 
-            PTPER = per;
-            PDC1  = duty;
-            MDC   = duty;
-
-            IOCON3bits.OVRDAT = 0b01;  /* back to H = 0, L = 1 */
-            IOCON3bits.OVRENH = 1;     /* OSYNC: takes effect at the end of */
-            IOCON3bits.OVRENL = 1;     /* this 50 kHz cycle                 */
-
-            LATBbits.LATB3   = 0;
-            rdson_cycle_done = 1;
-            rdson_state      = 0;
-        }
+    /* Fires at the START of the single slow cycle. Restoring here means the
+     * cycle after it is already back to normal. */
+    case 2:
+        PTPER = rd_fast_per;
+        PDC1  = rd_fast_duty;
+        MDC   = rd_fast_duty;
+        IOCON3bits.OVRDAT = 0b01;
+        IOCON3bits.OVRENH = 1;
+        IOCON3bits.OVRENL = 1;
+        LATBbits.LATB3   = 0;
+        PHASE3=0;
+        PDC3=0;
+        rdson_cycle_done = 1;
+        rdson_state      = 0;
         break;
     }
 }
@@ -143,6 +118,28 @@ void Clock_Init(void)
     
 }
 
+void Rdson_Precompute(uint32_t freq, uint8_t duty)
+{
+    rd_fast_per  = (uint16_t)((FPWM / freq) - 1) * 8;
+    rd_fast_duty = (uint16_t)((uint32_t)rd_fast_per * duty / 100);
+
+    rd_slow_per  = (uint16_t)((FPWM / 50000UL) - 1) * 8;
+    rd_slow_duty = (uint16_t)((uint32_t)rd_slow_per * duty / 100);
+
+    /* PWM3H must rise with PWM1L, i.e. at PDC1 + ALTDTR1. DTR3 delays it by
+     * 100 ns after the PWM3 cycle start, so pull the phase back by DTR3. */
+    uint16_t ph = rd_slow_duty + ALTDTR1;
+    rd_phase3 = (ph > DT_100NS) ? (uint16_t)(ph - DT_100NS) : 0;
+
+    /* PWM3H falls 100 ns early so ALTDTR3 lands exactly on the boundary
+     * where the override takes the pins back. */
+    rd_pdc3 = rd_slow_duty + ALTDTR1-ALTDTR3;
+            //(uint16_t)(rd_slow_per - rd_phase3 - DT_100NS);
+    rd_phase3 -=216;
+    rd_pdc3 -= 10;
+}
+
+
 
 void IO_Init(void)
 {
@@ -164,7 +161,6 @@ void IO_Init(void)
         TRISBbits.TRISB0 = 1;       // Inputs
         TRISBbits.TRISB11 = 0; 
         TRISBbits.TRISB12 = 0;
-
 }
 
 void PWM3_ClampInit(void)
@@ -176,7 +172,7 @@ void PWM3_ClampInit(void)
     IOCON3bits.POLL   = 0;
 
     IOCON3bits.OSYNC  = 1;      /* override changes land on a period edge   */
-     //IOCON3bits.SWAP=1;
+    IOCON3bits.SWAP=0;
     IOCON3bits.OVRDAT = 0b01;   /* idle: PWM3H = 0, PWM3L = 1               */
     IOCON3bits.OVRENH = 1;
     IOCON3bits.OVRENL = 1;
@@ -190,7 +186,6 @@ void PWM3_ClampInit(void)
     ALTDTR3 = DT_100NS;         /* PWM3H falls -> 100 ns -> PWM3L rises     */
 
     FCLCON3bits.FLTMOD = 0b11;  /* fault disabled, same as PWM1/PWM2        */
-
     PHASE3 = 0;
     PDC3   = 0;
 }
@@ -694,7 +689,6 @@ void PWM_Mode2(uint32_t freq, uint8_t duty, uint16_t dt_ns)
     //HBH PWMCON1bits.CAM=0; //CENTER AL;IGNED MODE =1 EDGE ALIGNED = 0
     // HBH PWMCON1bits.ITB   = 0;    // USE PTPER if ITB=0 (automatic edge align so ignore CAM if ITB=0)
     //IF ITB=0, use phase
-
 //PWM2 OVERRIDE
     IOCON2bits.PMOD   = 0b11; // NOT complementary --> indep mode]
     IOCON2bits.PENH   = 1;    
@@ -721,9 +715,10 @@ void PWM_Mode2(uint32_t freq, uint8_t duty, uint16_t dt_ns)
     PTCONbits.SEIEN    = 1;
     IFS3bits.PSEMIF    = 0;
     IEC3bits.PSEMIE    = 1;
-    IPC14bits.PSEMIP   = 4;
+    IPC14bits.PSEMIP   = 6;
     
     PWM3_ClampInit();
+    Rdson_Precompute(freq,duty);
     //enable PWM
     PTCONbits.PTEN    = 1;    // RE-enable PWM sgn
 }
