@@ -8,7 +8,13 @@
 #define DEFAULT_FREQ    100000UL          // 100kHz
 #define DEFAULT_DUTY    50UL
 #define FCY          39613750UL
+#define CLAMP_ON_NS    100   
+#define CLAMP_OFF_NS   100   
+#define NS_CNT(ns)   ((uint16_t)(((uint32_t)(ns) * 100UL) / 106UL))
+#define PHASE3_LEADS   0
 
+
+static uint16_t rd_dtr3;
 extern volatile uint32_t new_freq           = DEFAULT_FREQ;
 extern volatile uint8_t  new_duty           = DEFAULT_DUTY;
 volatile uint8_t  pwm_update_pending = 0;
@@ -54,6 +60,7 @@ _PWMSpEventMatchInterrupt(void)
             rdson_pending = 0;
             PHASE3 = rd_phase3;
             PDC3   = rd_pdc3;
+            DTR3=rd_dtr3;
             rdson_state = 1;
         }
         break;
@@ -81,6 +88,7 @@ _PWMSpEventMatchInterrupt(void)
         IOCON3bits.OVRENL = 1;
         LATBbits.LATB3   = 0;
         PHASE3=0;
+        DTR3=ALTDTR3;
         PDC3=0;
         rdson_cycle_done = 1;
         rdson_state      = 0;
@@ -125,18 +133,10 @@ void Rdson_Precompute(uint32_t freq, uint8_t duty)
 
     rd_slow_per  = (uint16_t)((FPWM / 50000UL) - 1) * 8;
     rd_slow_duty = (uint16_t)((uint32_t)rd_slow_per * duty / 100);
+    rd_phase3 = 0;
 
-    /* PWM3H must rise with PWM1L, i.e. at PDC1 + ALTDTR1. DTR3 delays it by
-     * 100 ns after the PWM3 cycle start, so pull the phase back by DTR3. */
-    uint16_t ph = rd_slow_duty + ALTDTR1;
-    rd_phase3 = (ph > DT_100NS) ? (uint16_t)(ph - DT_100NS) : 0;
-
-    /* PWM3H falls 100 ns early so ALTDTR3 lands exactly on the boundary
-     * where the override takes the pins back. */
-    rd_pdc3 = rd_slow_duty + ALTDTR1-ALTDTR3;
-            //(uint16_t)(rd_slow_per - rd_phase3 - DT_100NS);
-    rd_phase3 -=216;
-    rd_pdc3 -= 10;
+    rd_pdc3 = rd_slow_per - NS_CNT(CLAMP_OFF_NS);
+    rd_dtr3= rd_slow_duty + ALTDTR1 +NS_CNT(CLAMP_ON_NS);
 }
 
 
