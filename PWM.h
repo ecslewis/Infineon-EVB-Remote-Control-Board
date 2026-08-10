@@ -10,6 +10,7 @@
 #define DEFAULT_FREQ    100000UL          // 200kHz
 #define DEFAULT_DUTY    50
 #define FCY          39613750UL
+#define DT_100NS     94        
 
 /*============================================================
  * EXTERN VARIABLES
@@ -50,6 +51,7 @@ void PWM_Update(uint32_t freq, uint8_t duty);
 static void Timer3_LoadAndStart_12ms(void);
 static void Timer3_LoadAndStart_200us(void);
 static void Timer2_LoadAndStart_20us(void);
+void PWM3_ClampInit(void);
 void PWM1_StartRampDown(uint32_t target_freq, uint8_t duty);
 void PWM2_StartRampDown(uint32_t target_freq, uint8_t duty);
 void PWM_Mode(uint32_t freq, uint8_t duty, uint16_t dt_ns);

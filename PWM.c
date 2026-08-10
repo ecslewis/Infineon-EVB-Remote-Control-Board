@@ -23,6 +23,11 @@ volatile uint8_t  saved_duty       = 0;
 volatile uint8_t led_blink = 0;
 volatile ZC_State_t zc_state = ZC_IDLE;
 
+//PREDEF
+static uint16_t rd_slow_per, rd_slow_duty;
+static uint16_t rd_fast_per, rd_fast_duty;
+static uint16_t rd_phase3,   rd_pdc3;
+
 //ramp
 volatile uint8_t  pwm_ramp_active = 0;
 volatile uint8_t  pwm_ramp_channel = 0; // 1 = PWM1, 2 = PWM2
@@ -37,80 +42,77 @@ void __attribute__((interrupt, no_auto_psv))
 _PWMSpEventMatchInterrupt(void)
 {
     IFS3bits.PSEMIF = 0;
-
     static uint8_t rdson_state = 0;
-    //LATBbits.LATB4 ^= 1;
-    switch(rdson_state) {
-        case 0:                     // Normal operation -> go to 50kHz for 1 cycle
-            if(rdson_pending == 1) {
-                rdson_pending = 0;
-                
-                // Save current settings
-                saved_freq = new_freq;
-                saved_duty = new_duty;
-                PWMCON1bits.IUE = 0;
-                // Switch to 50kHz
-                uint16_t period  = (uint16_t)((FPWM / 50000UL) - 1)*8;
-                uint16_t compare = (uint16_t)((uint32_t)period
-                                    * saved_duty / 100);
-                //PTCONbits.PTEN   = 0;
-                PTPER            = period;
-                //PHASE1           = period;
-                //PHASE2           = period;
-                
-                MDC              = compare;
-                PDC1             = compare;
-                PDC3=compare;
-                PDC2             = compare;
-                //PTCONbits.PTEN   = 1;
-                SEVTCMP         = period - 8;
-                LATBbits.LATB3 = 1; //turn on LED
-                rdson_state      = 1;
-                IOCON3bits.SWAP=1;
-                IOCON3bits.OVRENH = 0;
-                IOCON3bits.OVRENL = 0;
-                IOCON3bits.PENH   = 1;
-                IOCON3bits.PENL   = 1;
-                IOCON3bits.PMOD   = 0b00; // Complementary
-                PWMCON3bits.IUE = 0;
-                
-                
-            }
-            break;
 
-        case 1:                     // 50kHz cycle done, go back to normal now
-            {
-//                IOCON3bits.PMOD   = 0b11; // NOT complementary --> indep mode]
-//                IOCON3bits.PENH   = 1;    
-//                IOCON3bits.PENL   = 1;
-//                IOCON3bits.OVRDAT = 0b01; // PWM2H = HIGH                         // PWM2L = HIGH 
-//                //use overriden data
-//                IOCON3bits.OVRENH = 1;    // Override hsS
-//                IOCON3bits.OVRENL = 1;    // Override hsS
-                // restor old frequency
-                PWMCON1bits.IUE = 0;
-                PWMCON3bits.IUE = 0;
-                LATBbits.LATB3 = 1; //turn on LED
-                uint16_t period  = (uint16_t)((FPWM / saved_freq) - 1)*8;
-                uint16_t compare = (uint16_t)((uint32_t)period
-                                    * saved_duty / 100);
-                //PTCONbits.PTEN   = 0
-                PTPER            = period;
-                //PHASE1           = period;
-                //PHASE2           = period;
-                MDC              = compare;
-                PDC1             = compare;
-                PDC2             = compare;
-                 SEVTCMP          = period- 8;
-                 LATBbits.LATB3 = 0; //turn off LED
-                //PTCONbits.PTEN   = 1;
+    switch(rdson_state)
+    {
+    /* ------------------------------------------------------------------
+     * Fires at the start of the last high-frequency cycle.
+     * Everything written here latches at the period boundary, so the
+     * NEXT period is the 50 kHz one.
+     * ---------------------------------------------------------------- */
+    case 0:
+        if(rdson_pending == 1)
+        {
+            rdson_pending = 0;
+            saved_freq    = new_freq;
+            saved_duty    = new_duty;
 
-                rdson_cycle_done = 1;
-                rdson_state      = 0;
-            }
-            break;
+            uint16_t per  = (uint16_t)((FPWM / 50000UL) - 1) * 8;
+            uint16_t duty = (uint16_t)((uint32_t)per * saved_duty / 100);
+
+            PTPER = per;
+            PDC1  = duty;
+            MDC   = duty;
+
+            /* PWM1L rises at PDC1 + ALTDTR1. DTR3 delays PWM3H by 100 ns
+             * after the PWM3 cycle start, so pull the phase back by DTR3:
+             * PWM3L then falls 100 ns before PWM3H rises, and PWM3H rises
+             * exactly on the PWM1L edge. */
+            uint16_t ph = duty + ALTDTR1;
+            ph = (ph > DT_100NS) ? (uint16_t)(ph - DT_100NS) : 0;
+            PHASE3 = ph;
+
+            /* PWM3H falls 100 ns before the period ends, so ALTDTR3 brings
+             * PWM3L back up exactly at the boundary where the override
+             * re-engages. No fight between the two.
+             * If you want PWM3H and PWM1L to fall together instead, drop the
+             * "- DT_100NS" and delay the override by one more period. */
+            PDC3 = (uint16_t)(per - ph - DT_100NS);
+
+            IOCON3bits.OVRENH = 0;   /* OSYNC hands the pins to the module */
+            IOCON3bits.OVRENL = 0;   /* at the start of the 50 kHz cycle   */
+
+            LATBbits.LATB3 = 1;
+            rdson_state    = 1;
+        }
+        break;
+
+    /* ------------------------------------------------------------------
+     * Fires at the START of the single 50 kHz cycle. Restoring here means
+     * the cycle after this one is already back to normal.
+     * ---------------------------------------------------------------- */
+    case 1:
+        {
+            uint16_t per  = (uint16_t)((FPWM / saved_freq) - 1) * 8;
+            uint16_t duty = (uint16_t)((uint32_t)per * saved_duty / 100);
+
+            PTPER = per;
+            PDC1  = duty;
+            MDC   = duty;
+
+            IOCON3bits.OVRDAT = 0b01;  /* back to H = 0, L = 1 */
+            IOCON3bits.OVRENH = 1;     /* OSYNC: takes effect at the end of */
+            IOCON3bits.OVRENL = 1;     /* this 50 kHz cycle                 */
+
+            LATBbits.LATB3   = 0;
+            rdson_cycle_done = 1;
+            rdson_state      = 0;
+        }
+        break;
     }
 }
+
 
 void Clock_Init(void) 
 {
@@ -160,7 +162,39 @@ void IO_Init(void)
         LATBbits.LATB3 = 0; //initially off
         ANSELBbits.ANSB0 = 0;       // Digital mode
         TRISBbits.TRISB0 = 1;       // Inputs
+        TRISBbits.TRISB11 = 0; 
+        TRISBbits.TRISB12 = 0;
+
 }
+
+void PWM3_ClampInit(void)
+{
+    IOCON3bits.PENH   = 1;
+    IOCON3bits.PENL   = 1;
+    IOCON3bits.PMOD   = 0b00;   /* complementary -> hardware dead time      */
+    IOCON3bits.POLH   = 0;
+    IOCON3bits.POLL   = 0;
+
+    IOCON3bits.OSYNC  = 1;      /* override changes land on a period edge   */
+     //IOCON3bits.SWAP=1;
+    IOCON3bits.OVRDAT = 0b01;   /* idle: PWM3H = 0, PWM3L = 1               */
+    IOCON3bits.OVRENH = 1;
+    IOCON3bits.OVRENL = 1;
+
+    PWMCON3bits.ITB   = 0;      /* master time base -> PHASE3 = phase shift */
+    PWMCON3bits.MDCS  = 0;      /* PDC3 is the duty source, not MDC         */
+    PWMCON3bits.IUE   = 0;      /* duty latches at the period boundary      */
+    PWMCON3bits.DTC   = 0b00;   /* positive dead time                       */
+
+    DTR3    = DT_100NS;         /* PWM3L falls -> 100 ns -> PWM3H rises     */
+    ALTDTR3 = DT_100NS;         /* PWM3H falls -> 100 ns -> PWM3L rises     */
+
+    FCLCON3bits.FLTMOD = 0b11;  /* fault disabled, same as PWM1/PWM2        */
+
+    PHASE3 = 0;
+    PDC3   = 0;
+}
+
 void INT1_Init(void)
 {
     // Map INT1 to RP32 = RB0 = Pin 5 [1]
@@ -671,18 +705,17 @@ void PWM_Mode2(uint32_t freq, uint8_t duty, uint16_t dt_ns)
     IOCON2bits.OVRENL = 1;    // Override hsS
     FCLCON2bits.FLTMOD = 0b11;
     
- //SET PWM3 GL AND GH
-    
-    IOCON3bits.PMOD   = 0b11; // NOT complementary --> indep mode]
-    IOCON3bits.PENH   = 1;    
-    IOCON3bits.PENL   = 1;
-    IOCON3bits.OVRDAT = 0b01; // PWM2H = HIGH                         // PWM2L = HIGH 
-    //use overriden data
-    IOCON3bits.OVRENH = 1;    // Override hsS
-    IOCON3bits.OVRENL = 1;    // Override hsS
-    FCLCON3bits.FLTMOD = 0b11;
-    
-    
+// //SET PWM3 GL AND GH
+//    
+//    IOCON3bits.PMOD   = 0b11; // NOT complementary --> indep mode]
+//    IOCON3bits.PENH   = 1;    
+//    IOCON3bits.PENL   = 1;
+//    IOCON3bits.OVRDAT = 0b01; // PWM2H = HIGH                         // PWM2L = HIGH 
+//    //use overriden data
+//    IOCON3bits.OVRENH = 1;    // Override hsS
+//    IOCON3bits.OVRENL = 1;    // Override hsS
+//    FCLCON3bits.FLTMOD = 0b11;
+//    
     //INTERRUPT ENABLE HBH
     SEVTCMP            = 8;
     PTCONbits.SEIEN    = 1;
@@ -690,7 +723,7 @@ void PWM_Mode2(uint32_t freq, uint8_t duty, uint16_t dt_ns)
     IEC3bits.PSEMIE    = 1;
     IPC14bits.PSEMIP   = 4;
     
-    
+    PWM3_ClampInit();
     //enable PWM
     PTCONbits.PTEN    = 1;    // RE-enable PWM sgn
 }
