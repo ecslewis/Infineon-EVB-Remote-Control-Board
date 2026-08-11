@@ -20,7 +20,33 @@
  * is the fail-safe state if the override is ever lost. */
 #define CLAMP_PDC3_OFF 0xFFF8u
 
-/* KNOWN ISSUE, deliberately accepted in this build:
+/* ---------------------------------------------------------------------- *
+ * Pin ownership, used INSTEAD of the output override to gate the clamp.
+ *
+ * IOCONx<15> = PENH, <14> = PENL.  Per the module block diagram the stages
+ * run: user override logic -> DEAD-TIME logic -> pin control logic -> pad.
+ * The override sits UPSTREAM of the dead-time block, which is why toggling it
+ * makes that block see an edge and emit a pulse one dead time later.  PENH and
+ * PENL sit DOWNSTREAM of it: the generator and its dead-time counter keep
+ * running undisturbed and only the pad mux moves.
+ *
+ * Both bits are changed in one store for the same reason the override macros
+ * do it - two BSET/BCLR instructions would leave the pair split for a cycle.
+ * ---------------------------------------------------------------------- */
+#define CLAMP_PEN_MASK 0xC000u
+
+#define CLAMP_PINS_TO_PWM() (IOCON3 |= CLAMP_PEN_MASK)
+#define CLAMP_PINS_TO_GPIO() (IOCON3 &= (uint16_t)(~CLAMP_PEN_MASK))
+
+/* Idle levels while the GPIO module owns the pads.  RB11 = GH, RB12 = GL. */
+#define CLAMP_GPIO_IDLE()                                                      \
+    do                                                                         \
+    {                                                                          \
+        LATBbits.LATB11 = 0; /* GH low  */                                     \
+        LATBbits.LATB12 = 1; /* GL high */                                     \
+    } while (0)
+
+/* SUPERSEDED - kept only to explain why the override is no longer used:
  * a ~10 ns pulse appears on GH one dead time after the override is released in
  * case 2.  It is emitted by the dead-time generator, which treats the
  * override-to-module changeover as an edge.  Confirmed by measurement - the
@@ -124,22 +150,20 @@ _PWMSpEventMatchInterrupt(void)
 
     switch (rdson_state)
     {
-    /* Arm only.  Loads the clamp geometry one period early, while the override
-     * masks the pins.  DTR3/ALTDTR3 are NEVER written here - they hold the
-     * 100 ns dead time and nothing else. */
+    /* Arm only.  PHASE3/PDC3 are NOT written here any more - they are set once
+     * in Rdson_Precompute() and left alone for the life of the program, so the
+     * PWM3 generator is never reconfigured while it is running.  That was the
+     * other half of the problem: every live write to PWM3 produced a pulse. */
     case 0:
         if (rdson_pending == 1)
         {
             rdson_pending = 0;
-            PHASE3 = rd_phase3;
-            PDC3 = rd_pdc3;
             rdson_state = 1;
         }
         break;
 
-    /* One period later: switch to 50 kHz.  The override is deliberately NOT
-     * touched here - see case 2.  PTPER/PDC1/MDC are double-buffered and latch
-     * at the boundary, so the NEXT period is the slow one. */
+    /* One period later: switch to 50 kHz.  PTPER/PDC1/MDC are double-buffered
+     * and latch at the boundary, so the NEXT period is the slow one. */
     case 1:
         PTPER = rd_slow_per;
         PDC1 = rd_slow_duty;
@@ -148,29 +172,30 @@ _PWMSpEventMatchInterrupt(void)
         rdson_state = 2;
         break;
 
-    /* Fires ~500 ns INSIDE the slow cycle.  Order matters: every register write
-     * happens with the override still asserted, and the override is released
-     * LAST, so the PTPER transient never reaches the pad.
+    /* Fires ~500 ns INSIDE the slow cycle, ~9.7 us ahead of the clamp pulse at
+     * 10.29 us.  Hands the pads from GPIO to the PWM module.
      *
-     * The residual 10 ns blip on GH appears one dead time after this release.
-     * See the note at the top of the file - it cannot be fixed here. */
+     * This replaces the override release.  The generator has been free-running
+     * the whole time and is not touched here, so the dead-time block sees no
+     * edge and has nothing to emit - only the pad mux moves.  PTPER is still
+     * written before the handover, while GPIO still owns the pins, so its
+     * transient cannot reach the pad either. */
     case 2:
         PTPER = rd_fast_per;
         PDC1 = rd_fast_duty;
         MDC = rd_fast_duty;
-        CLAMP_OVR_RELEASE(); /* release LAST - masks the PTPER write */
+        CLAMP_PINS_TO_PWM(); /* hand over LAST */
         LATBbits.LATB3 = 0;
         rdson_state = 3;
         break;
 
-    /* Fires ~500 ns inside the first fast cycle after the slow one.  PDC3 is
-     * larger than the fast PTPER, so the module is already holding GL high and
-     * GH low - re-asserting the override is a no-op on the pins.  Only once it
-     * is back on do PHASE3/PDC3 get parked. */
+    /* Fires ~500 ns into the first fast cycle after the slow one.  The pads go
+     * back to GPIO here.  In a fast period PDC3 exceeds PTPER, so the generator
+     * holds GH low and GL high anyway - the only blemish is its dead-band notch
+     * at ~9236 counts, which is long after this runs, so it never appears. */
     case 3:
-        CLAMP_OVR_ASSERT(); /* OVRDAT + both enables in one store */
-        PHASE3 = 0;
-        PDC3 = CLAMP_PDC3_OFF;
+        CLAMP_GPIO_IDLE();
+        CLAMP_PINS_TO_GPIO();
         rdson_cycle_done = 1;
         rdson_state = 0;
         break;
@@ -244,6 +269,18 @@ void Rdson_Precompute(uint32_t freq, uint8_t duty)
      * ------------------------------------------------------------------ */
     rd_phase3 = 2u * CLAMP_DT_CNT;
     rd_pdc3 = rd_slow_duty + ALTDTR1 + (3u * CLAMP_DT_CNT);
+
+    /* Loaded ONCE, here, and never written again while the module runs.
+     *
+     * The same pair works for both periods, which is what makes a static
+     * configuration possible at all:
+     *   - slow period (18856): produces the clamp pulse as designed.
+     *   - fast period  (9424): PDC3 exceeds PTPER, so the L signal never goes
+     *     high - GH stays low and GL stays high, which is the idle state.
+     * The pads are on GPIO during the fast periods regardless, so even the
+     * dead-band notch on GL is never exposed. */
+    PHASE3 = rd_phase3;
+    PDC3 = rd_pdc3;
 }
 
 void IO_Init(void)
@@ -264,8 +301,12 @@ void IO_Init(void)
     LATBbits.LATB3 = 0;   // initially off
     ANSELBbits.ANSB0 = 0; // Digital mode
     TRISBbits.TRISB0 = 1; // Inputs
+    /* RB11 = GH, RB12 = GL.  Outputs, and driven to the safe idle state: the
+     * GPIO module owns these pads except during the one clamp cycle. */
     TRISBbits.TRISB11 = 0;
     TRISBbits.TRISB12 = 0;
+    LATBbits.LATB11 = 0; // GH low
+    LATBbits.LATB12 = 1; // GL high
 }
 
 void PWM3_ClampInit(void)
@@ -287,21 +328,24 @@ void PWM3_ClampInit(void)
      *     GL falls at PDC3      -> GH rises 100 ns later  (ALTDTR3)
      *     GH falls at rollover  -> GL rises 100 ns later  (DTR3)
      * ------------------------------------------------------------------ */
-    IOCON3bits.PENH = 1;
-    IOCON3bits.PENL = 1;
+    /* Pads start on GPIO at the idle levels.  The PWM module only takes them
+     * for the one slow cycle.  A hung MCU therefore leaves the clamp in a
+     * defined state rather than relying on an override staying asserted. */
+    CLAMP_GPIO_IDLE();
+    IOCON3bits.PENH = 0;
+    IOCON3bits.PENL = 0;
+
     IOCON3bits.PMOD = 0b00; /* complementary -> hardware dead time       */
     IOCON3bits.POLH = 0;
     IOCON3bits.POLL = 0;
     IOCON3bits.SWAP = 1; /* H signal -> PWM3L pin, L signal -> PWM3H pin */
 
-    /* OSYNC = 0: override changes take effect on the next CPU clock, not at
-     * the period boundary.  The ISR toggles the override ~500 ns inside a
-     * cycle, where the module is already driving the same levels the override
-     * was holding. */
-    IOCON3bits.OSYNC = 0;
-    IOCON3bits.OVRDAT = CLAMP_IDLE_OVRDAT; /* idle: GH = 0, GL = 1       */
-    IOCON3bits.OVRENH = 1;
-    IOCON3bits.OVRENL = 1;
+    /* The output override is now UNUSED.  Toggling it is what made the
+     * dead-time block emit the 10 ns pulse on GH, because the override sits
+     * upstream of that block.  Pin ownership is used instead - see the macros
+     * at the top of the file.  These are left disabled deliberately. */
+    IOCON3bits.OVRENH = 0;
+    IOCON3bits.OVRENL = 0;
 
     PWMCON3bits.ITB = 0;    /* master time base -> PTPER is the period   */
     PWMCON3bits.MDCS = 0;   /* PDC3 is the duty source, not MDC          */
@@ -314,8 +358,9 @@ void PWM3_ClampInit(void)
     ALTDTR3 = CLAMP_DT_CNT; /* GL falls -> 100 ns -> GH rises            */
 
     FCLCON3bits.FLTMOD = 0b11; /* fault disabled, same as PWM1/PWM2      */
-    PHASE3 = 0;
-    PDC3 = CLAMP_PDC3_OFF; /* fail-safe: clamp OFF if override is lost   */
+
+    /* PHASE3/PDC3 are loaded at the end of Rdson_Precompute(), which runs
+     * immediately after this, and are never written again. */
 }
 
 void INT1_Init(void)
