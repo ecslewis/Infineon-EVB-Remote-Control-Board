@@ -32,6 +32,29 @@
  * half.  It was the override that was inverted, not the swap. */
 #define CLAMP_IDLE_OVRDAT 0b01
 
+/* IOCONx bit fields (data sheet Register 15-20):
+ *    <9> OVRENH   <8> OVRENL   <7:6> OVRDAT<1:0>
+ *
+ * OVRENH and OVRENL MUST be changed in one store.  Writing them as two
+ * separate IOCON3bits.OVRENx assignments is two BCLR/BSET instructions, and
+ * with OSYNC = 0 each takes effect immediately - so for one instruction cycle
+ * (25.2 ns at FCY = 39.6 MHz) exactly one half of a complementary pair is
+ * module-driven while the other is still overridden.  The dead-time logic sees
+ * a transition it did not generate and emits a pulse a few counts wide on GH.
+ * That is the ~10 ns blip: it lands on these writes, which sit ~4-6
+ * instructions ahead of the LATB3 clear at the end of case 2. */
+#define CLAMP_OVREN_MASK  0x0300u
+#define CLAMP_OVRDAT_MASK 0x00C0u
+
+#define CLAMP_OVR_RELEASE()                                                    \
+    (IOCON3 &= (uint16_t)(~CLAMP_OVREN_MASK))
+
+#define CLAMP_OVR_ASSERT()                                                     \
+    (IOCON3 = (uint16_t)((IOCON3 & (uint16_t)(~(CLAMP_OVRDAT_MASK |            \
+                                                CLAMP_OVREN_MASK))) |         \
+                         ((uint16_t)(CLAMP_IDLE_OVRDAT) << 6) |               \
+                         CLAMP_OVREN_MASK))
+
 /* Special event trigger offset from the period start, in PWM counts.  The
  * clamp ISR toggles the override immediately (OSYNC = 0), so it must run at a
  * point where the PWM3 generator is already clear of its DTR3 dead band -
@@ -128,8 +151,7 @@ _PWMSpEventMatchInterrupt(void)
      * PTPER/PDC1/MDC are restored here as before - they latch at the next
      * boundary, so exactly one slow cycle happens. */
     case 2:
-        IOCON3bits.OVRENH = 0;
-        IOCON3bits.OVRENL = 0;
+        CLAMP_OVR_RELEASE(); /* single store - never two BCLRs, see macro */
         PTPER = rd_fast_per;
         PDC1 = rd_fast_duty;
         MDC = rd_fast_duty;
@@ -143,9 +165,7 @@ _PWMSpEventMatchInterrupt(void)
      * Re-asserting here is therefore also a no-op on the pins.  Only once the
      * override is back on do PHASE3/PDC3 get parked. */
     case 3:
-        IOCON3bits.OVRDAT = CLAMP_IDLE_OVRDAT; /* GH low, GL high */
-        IOCON3bits.OVRENH = 1;
-        IOCON3bits.OVRENL = 1;
+        CLAMP_OVR_ASSERT(); /* OVRDAT + both enables in one store */
         PHASE3 = 0;
         PDC3 = CLAMP_PDC3_OFF; /* fail-safe duty; DTR3/ALTDTR3 untouched */
         rdson_cycle_done = 1;
