@@ -13,7 +13,7 @@
 /* One PWM count = 1 / (FPWM * 8) = 1 / 943.36 MHz = 1.060 ns  (high-res on). */
 #define NS_CNT(ns)     ((uint16_t)(((uint32_t)(ns) * 100UL) / 106UL))
 
-#define CLAMP_DT_NS    200                      /* GL<->GH dead time, both edges */
+#define CLAMP_DT_NS    100                      /* GL<->GH dead time, both edges */
 #define CLAMP_DT_CNT   NS_CNT(CLAMP_DT_NS)      /* = 94 counts = 99.6 ns         */
 
 /* PDC3 value that parks the clamp OFF.  Larger than any period we ever use, so
@@ -184,8 +184,8 @@ void Rdson_Precompute(uint32_t freq, uint8_t duty)
      * ALTDTR1 is already loaded by PWM_Mode2() before this runs, so the
      * turn-on gap holds whatever dead time PWM1 is using.
      * ------------------------------------------------------------------ */
-    rd_phase3 = CLAMP_DT_CNT;
-    rd_pdc3   = rd_slow_duty + ALTDTR1 + CLAMP_DT_CNT;
+    rd_phase3 = 2*CLAMP_DT_CNT;
+    rd_pdc3   = rd_slow_duty + ALTDTR1 + 3*CLAMP_DT_CNT;
 }
 
 
