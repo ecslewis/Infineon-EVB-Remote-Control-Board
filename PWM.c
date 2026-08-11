@@ -12,6 +12,10 @@
 /* One PWM count = 1 / (FPWM * 8) = 1 / 943.36 MHz = 1.060 ns  (high-res on). */
 #define NS_CNT(ns) ((uint16_t)(((uint32_t)(ns) * 100UL) / 106UL))
 
+/* Set to 1 to bypass the dead-time generator for one diagnostic build.
+ * See PWM3_ClampInit() for what it proves.  Must be 0 for normal operation. */
+#define CLAMP_DT_BYPASS_TEST 1
+
 #define CLAMP_DT_NS 100                  /* GL<->GH dead time, both edges */
 #define CLAMP_DT_CNT NS_CNT(CLAMP_DT_NS) /* = 94 counts = 99.6 ns         */
 
@@ -351,7 +355,28 @@ void PWM3_ClampInit(void)
     PWMCON3bits.ITB = 0;    /* master time base -> PTPER is the period  */
     PWMCON3bits.MDCS = 0;   /* PDC3 is the duty source, not MDC         */
     PWMCON3bits.IUE = 0;    /* duty latches at the period boundary      */
+#if CLAMP_DT_BYPASS_TEST
+    /* ===== TEMPORARY DIAGNOSTIC - set CLAMP_DT_BYPASS_TEST back to 0 =====
+     * DTC = 0b10 removes the dead-time generator from the signal path
+     * entirely.  This is the block that emits the blip: the artifact tracked
+     * CLAMP_DT_NS exactly (100 ns -> 100 ns after the handoff, 500 ns ->
+     * 500 ns), which is only explicable if the dead-time delay stage is
+     * producing it.
+     *
+     * With this set, GH and GL become exact complements with NO 100 ns gaps -
+     * that is expected and is not the thing being tested.  The only question
+     * is whether the blip on GH disappears.
+     *
+     *   blip gone      -> the dead-time generator is confirmed as the source,
+     *                     and True Independent mode (which also has no dead
+     *                     time) will fix it properly while keeping the gaps.
+     *   blip still there -> my conclusion is wrong despite the correlation,
+     *                     and the rewrite would not have helped either.
+     * ==================================================================== */
+    PWMCON3bits.DTC = 0b10; /* dead-time function disabled              */
+#else
     PWMCON3bits.DTC = 0b00; /* positive dead time                       */
+#endif
 
     /* DTR3/ALTDTR3 are NOT double-buffered.  They are written exactly once,
      * here, and hold the 100 ns dead time for the life of the program.
