@@ -239,7 +239,7 @@ void Rdson_Precompute(uint32_t freq, uint8_t duty)
     rd_fast_duty = (uint16_t)((uint32_t)rd_fast_per * duty / 100);
 
     rd_slow_per = (uint16_t)((FPWM / RDSON_FREQ) - 1) * 8;
-    rd_slow_duty = (uint16_t)((uint32_t)rd_slow_per * duty / 100);
+    rd_slow_duty = (uint16_t)((uint32_t)rd_slow_per * 50 / 100);
 
     /* ------------------------------------------------------------------ *
      * Required edge order across the slow cycle - four gaps, 100 ns each:
