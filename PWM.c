@@ -138,39 +138,32 @@ _PWMSpEventMatchInterrupt(void)
         rdson_state = 2;
         break;
 
-    /* Fires ~500 ns INSIDE the slow cycle (SEVT_OFFSET_CNT), which is the whole
-     * point: the override is released here, immediately (OSYNC = 0), instead of
-     * at the period boundary.
-     *
-     * At a boundary the H signal is still inside its DTR3 dead band, so handing
-     * GL from "override = 1" to "module driven" there drops it low until the
-     * generator clears DTR3 - that was the GL notch.  500 ns in, the generator
-     * is past DTR3 and far short of PDC3, so the module is already driving
-     * GL = 1 and GH = 0 and the handoff is a no-op on both pins.
-     *
-     * PTPER/PDC1/MDC are restored here as before - they latch at the next
-     * boundary, so exactly one slow cycle happens. */
     case 2:
-        /* ===== TEMPORARY BISECTION INSTRUMENTATION - REMOVE WHEN DONE =====
-         * LATB3 is used here as a scope marker instead of an LED.  It brackets
-         * each candidate write so the blip can be located by inspection rather
-         * than by guesswork:
+        /* Fires ~500 ns INSIDE the slow cycle.  The ORDER of these writes is
+         * the whole fix, so do not reshuffle them.
          *
-         *   LATB3 HIGH  window  = the override release
-         *   LATB3 LOW   window  = the PTPER write
-         *   LATB3 HIGH  window  = the PDC1 / MDC writes
+         * Writing PTPER while PWM3 is live disturbs the generator and emits a
+         * pulse a few counts wide on GH.  This was located by bisection: with
+         * LATB3 bracketing each candidate write, the blip landed in the PTPER
+         * window, not the override window and not the PDC1/MDC window.  PTPER
+         * defines where the L signal's falling edge sits, and with SWAP = 1
+         * that signal is the GH pin - so GH is exactly the output a mid-cycle
+         * PTPER change can kick.
          *
-         * Trigger on GH's blip and read which LATB3 window it falls inside.
-         * That identifies the offending write in one capture.
-         * ================================================================= */
-        LATBbits.LATB3 = 1;  /* marker A: open override window */
-        CLAMP_OVR_RELEASE(); /* single store - never two BCLRs, see macro */
-        LATBbits.LATB3 = 0;  /* marker B: close override, open PTPER window */
+         * The cure is to keep the pins clamped while it happens: every
+         * register write is done with the override still asserted, and the
+         * override is released LAST.  OVRDAT holds GH low throughout, so the
+         * transient never reaches the pad.
+         *
+         * PTPER/PDC1/MDC are double-buffered and latch at the next boundary
+         * regardless of where in the ISR they are written, so moving them
+         * ahead of the release does not change the sequencing - exactly one
+         * slow cycle still happens. */
         PTPER = rd_fast_per;
-        LATBbits.LATB3 = 1;  /* marker C: close PTPER, open PDC1/MDC window */
         PDC1 = rd_fast_duty;
         MDC = rd_fast_duty;
-        LATBbits.LATB3 = 0;  /* marker D: close all windows */
+        CLAMP_OVR_RELEASE(); /* release LAST - masks the PTPER transient */
+        LATBbits.LATB3 = 0;
         rdson_state = 3;
         break;
 
