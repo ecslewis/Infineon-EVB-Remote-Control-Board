@@ -13,7 +13,7 @@
 /* One PWM count = 1 / (FPWM * 8) = 1 / 943.36 MHz = 1.060 ns  (high-res on). */
 #define NS_CNT(ns)     ((uint16_t)(((uint32_t)(ns) * 100UL) / 106UL))
 
-#define CLAMP_DT_NS    100                      /* GL<->GH dead time, both edges */
+#define CLAMP_DT_NS    200                      /* GL<->GH dead time, both edges */
 #define CLAMP_DT_CNT   NS_CNT(CLAMP_DT_NS)      /* = 94 counts = 99.6 ns         */
 
 /* PDC3 value that parks the clamp OFF.  Larger than any period we ever use, so
@@ -28,7 +28,7 @@
  * Idle = GH low, GL high  =>  H signal 1, L signal 0  =>  0b10.
  * (If the scope shows this inverted at idle, change it to 0b01 - that is the
  *  only line that needs to move.) */
-#define CLAMP_IDLE_OVRDAT 0b10
+#define CLAMP_IDLE_OVRDAT 0b01
 
 /* PHASE3 (with PWMCON3bits.ITB = 0) is a phase shift against the master time
  * base.  This code assumes the shift ADVANCES the PWM3 edges - i.e. PHASE3 is
