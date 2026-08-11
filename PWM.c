@@ -8,13 +8,42 @@
 #define DEFAULT_FREQ    100000UL          // 100kHz
 #define DEFAULT_DUTY    50UL
 #define FCY          39613750UL
-#define CLAMP_ON_NS    100   
-#define CLAMP_OFF_NS   100   
-#define NS_CNT(ns)   ((uint16_t)(((uint32_t)(ns) * 100UL) / 106UL))
-#define PHASE3_LEADS   0
+#define RDSON_FREQ     50000UL      /* the single slow cycle                    */
 
+/* One PWM count = 1 / (FPWM * 8) = 1 / 943.36 MHz = 1.060 ns  (high-res on). */
+#define NS_CNT(ns)     ((uint16_t)(((uint32_t)(ns) * 100UL) / 106UL))
 
-static uint16_t rd_dtr3;
+#define CLAMP_DT_NS    100                      /* GL<->GH dead time, both edges */
+#define CLAMP_DT_CNT   NS_CNT(CLAMP_DT_NS)      /* = 94 counts = 99.6 ns         */
+
+/* PDC3 value that parks the clamp OFF.  Larger than any period we ever use, so
+ * the H signal is high for the whole period -> GL pin high, GH pin low.  This
+ * is the fail-safe state if the override is ever lost. */
+#define CLAMP_PDC3_OFF 0xFFF8u
+
+/* IOCON3bits.SWAP = 1 puts the module's H *signal* on the PWM3L *pin* and the
+ * L signal on the PWM3H pin.  The swap happens in the pin control logic, after
+ * the override logic, so OVRDAT is still expressed in signal terms:
+ *   OVRDAT<1> -> H signal -> GL pin,  OVRDAT<0> -> L signal -> GH pin.
+ * Idle = GH low, GL high  =>  H signal 1, L signal 0  =>  0b10.
+ * (If the scope shows this inverted at idle, change it to 0b01 - that is the
+ *  only line that needs to move.) */
+#define CLAMP_IDLE_OVRDAT 0b10
+
+/* PHASE3 (with PWMCON3bits.ITB = 0) is a phase shift against the master time
+ * base.  This code assumes the shift ADVANCES the PWM3 edges - i.e. PHASE3 is
+ * added to the master counter before the compare, so the generator reaches its
+ * compare values PHASE3 counts EARLIER.  The data sheet only states "phase-
+ * shift value, valid range 0 through period" and does not give the sign, so
+ * this is the one thing in the clamp path that is not verified from the book.
+ *
+ * SCOPE CHECK: GH must fall 100 ns BEFORE the PTPER rollover.  If it instead
+ * falls 100 ns AFTER, the sign is inverted - do NOT just swap the number,
+ * because the equivalent shift the other way is (period - 100 ns), which drags
+ * PWM3's period boundary almost a full period away from the master and breaks
+ * the PDC3 latching and the OSYNC'd override handoff.  Ask for the ITB = 1
+ * variant instead. */
+
 extern volatile uint32_t new_freq           = DEFAULT_FREQ;
 extern volatile uint8_t  new_duty           = DEFAULT_DUTY;
 volatile uint8_t  pwm_update_pending = 0;
@@ -52,15 +81,15 @@ _PWMSpEventMatchInterrupt(void)
 
     switch(rdson_state)
     {
-    /* Arm only. Give PHASE3 a full period to settle before the slow cycle. */
+    /* Arm only. Load the clamp duty one period early so it is already latched
+     * when the slow cycle starts.  DTR3/ALTDTR3 are NEVER written here - they
+     * hold the 100 ns dead time and nothing else. */
     case 0:
         if(rdson_pending == 1)
         {
-            //IOCON3bits.SWAP=1;
             rdson_pending = 0;
-            PHASE3 = rd_phase3;
-            PDC3   = rd_pdc3;
-            DTR3=rd_dtr3;
+            PHASE3 = rd_phase3;      /* 0: PWM3 rides the master time base */
+            PDC3   = rd_pdc3;        /* GL falls here, GH rises 100 ns later */
             rdson_state = 1;
         }
         break;
@@ -83,13 +112,12 @@ _PWMSpEventMatchInterrupt(void)
         PTPER = rd_fast_per;
         PDC1  = rd_fast_duty;
         MDC   = rd_fast_duty;
-        IOCON3bits.OVRDAT = 0b01;
+        IOCON3bits.OVRDAT = CLAMP_IDLE_OVRDAT;   /* GH low, GL high */
         IOCON3bits.OVRENH = 1;
         IOCON3bits.OVRENL = 1;
         LATBbits.LATB3   = 0;
-        PHASE3=0;
-        DTR3=ALTDTR3;
-        PDC3=0;
+        PHASE3 = 0;
+        PDC3   = CLAMP_PDC3_OFF;   /* fail-safe duty; DTR3/ALTDTR3 untouched */
         rdson_cycle_done = 1;
         rdson_state      = 0;
         break;
@@ -131,12 +159,33 @@ void Rdson_Precompute(uint32_t freq, uint8_t duty)
     rd_fast_per  = (uint16_t)((FPWM / freq) - 1) * 8;
     rd_fast_duty = (uint16_t)((uint32_t)rd_fast_per * duty / 100);
 
-    rd_slow_per  = (uint16_t)((FPWM / 50000UL) - 1) * 8;
+    rd_slow_per  = (uint16_t)((FPWM / RDSON_FREQ) - 1) * 8;
     rd_slow_duty = (uint16_t)((uint32_t)rd_slow_per * duty / 100);
-    rd_phase3 = 0;
 
-    rd_pdc3 = rd_slow_per - NS_CNT(CLAMP_OFF_NS);
-    rd_dtr3= rd_slow_duty + ALTDTR1 +NS_CNT(CLAMP_ON_NS);
+    /* ------------------------------------------------------------------ *
+     * Both clamp edges have to clear PWM1L by 100 ns:
+     *
+     *     PWM1L rise  ->  100 ns  ->  GH rise          (turn-on)
+     *     GH fall     ->  100 ns  ->  PWM1L fall       (turn-off)
+     *
+     * PWM1L falls at the PTPER rollover, and with SWAP = 1 so does GH - the
+     * complementary L signal always runs to the rollover.  The only way to
+     * pull GH's fall in front of it is to shift the whole PWM3 generator
+     * earlier, which is what PHASE3 is for.  PHASE3 = 100 ns advances every
+     * PWM3 edge by 100 ns; PDC3 then adds the same 100 ns back so the rising
+     * edges stay where they belong.
+     *
+     * In master time base terms (P = rd_phase3):
+     *     GL fall  = PDC3 - P                  = rd_slow_duty + ALTDTR1
+     *     GH rise  = PDC3 + ALTDTR3 - P        = GL fall + 100 ns
+     *     GH fall  = rd_slow_per - P           = rollover - 100 ns
+     *     GL rise  = rd_slow_per - P + DTR3    = rollover
+     *
+     * ALTDTR1 is already loaded by PWM_Mode2() before this runs, so the
+     * turn-on gap holds whatever dead time PWM1 is using.
+     * ------------------------------------------------------------------ */
+    rd_phase3 = CLAMP_DT_CNT;
+    rd_pdc3   = rd_slow_duty + ALTDTR1 + CLAMP_DT_CNT;
 }
 
 
@@ -165,29 +214,55 @@ void IO_Init(void)
 
 void PWM3_ClampInit(void)
 {
+    /* ------------------------------------------------------------------ *
+     * Edge-aligned complementary mode with positive dead time (DTC = 00)
+     * produces, in SIGNAL space:
+     *
+     *     H signal : high from  DTR3              to  PDC3
+     *     L signal : high from  PDC3 + ALTDTR3    to  the period rollover
+     *
+     * The clamp must be ON through the second half of the slow cycle, i.e.
+     * the ON pulse has to run all the way to the rollover.  That is the
+     * shape of the L signal, not the H signal - so SWAP = 1 cross-connects
+     * them and the GH pin gets the pulse that ends at the rollover:
+     *
+     *     GL pin (PWM3L) <- H signal : high [DTR3, PDC3]
+     *     GH pin (PWM3H) <- L signal : high [PDC3 + ALTDTR3, rollover]
+     *
+     * Both clamp edges then carry a real hardware dead time:
+     *     GL falls at PDC3      -> GH rises 100 ns later  (ALTDTR3)
+     *     GH falls at rollover  -> GL rises 100 ns later  (DTR3)
+     *
+     * This is what replaces the old scheme, which abused DTR3 as a delay
+     * (DTR3 ~ 9500 counts ~ 10 us) to push the GH pulse into the second
+     * half of the cycle.  DTR3 is a dead time, not a phase offset.
+     * ------------------------------------------------------------------ */
     IOCON3bits.PENH   = 1;
     IOCON3bits.PENL   = 1;
     IOCON3bits.PMOD   = 0b00;   /* complementary -> hardware dead time      */
     IOCON3bits.POLH   = 0;
     IOCON3bits.POLL   = 0;
+    IOCON3bits.SWAP   = 1;      /* H signal -> PWM3L pin, L signal -> PWM3H */
 
     IOCON3bits.OSYNC  = 1;      /* override changes land on a period edge   */
-    IOCON3bits.SWAP=0;
-    IOCON3bits.OVRDAT = 0b01;   /* idle: PWM3H = 0, PWM3L = 1               */
+    IOCON3bits.OVRDAT = CLAMP_IDLE_OVRDAT;  /* idle: GH = 0, GL = 1         */
     IOCON3bits.OVRENH = 1;
     IOCON3bits.OVRENL = 1;
 
-    PWMCON3bits.ITB   = 0;      /* master time base -> PHASE3 = phase shift */
+    PWMCON3bits.ITB   = 0;      /* master time base -> PTPER is the period  */
     PWMCON3bits.MDCS  = 0;      /* PDC3 is the duty source, not MDC         */
     PWMCON3bits.IUE   = 0;      /* duty latches at the period boundary      */
     PWMCON3bits.DTC   = 0b00;   /* positive dead time                       */
 
-    DTR3    = DT_100NS;         /* PWM3L falls -> 100 ns -> PWM3H rises     */
-    ALTDTR3 = DT_100NS;         /* PWM3H falls -> 100 ns -> PWM3L rises     */
+    /* DTR3/ALTDTR3 are NOT double-buffered.  They are written exactly once,
+     * here, and hold the 100 ns dead time for the life of the program.
+     * Nothing in the ISR is allowed to touch them. */
+    DTR3    = CLAMP_DT_CNT;     /* GH falls -> 100 ns -> GL rises           */
+    ALTDTR3 = CLAMP_DT_CNT;     /* GL falls -> 100 ns -> GH rises           */
 
     FCLCON3bits.FLTMOD = 0b11;  /* fault disabled, same as PWM1/PWM2        */
-    PHASE3 = 0;
-    PDC3   = 0;
+    PHASE3 = 0;                 /* no phase shift                           */
+    PDC3   = CLAMP_PDC3_OFF;    /* fail-safe: clamp OFF if override is lost */
 }
 
 void INT1_Init(void)
@@ -679,10 +754,10 @@ void PWM_Mode2(uint32_t freq, uint8_t duty, uint16_t dt_ns)
     //PWMCON1bits.IUE = 1; //wait until PWM cycle ends to update HBH
     DTR1    = dt_ns;
     ALTDTR1 = dt_ns;
-    DTR3    = dt_ns;
-    ALTDTR3 = dt_ns;
     DTR2    = dt_ns;
     ALTDTR2 = dt_ns;
+    /* DTR3/ALTDTR3 deliberately NOT set here - PWM3_ClampInit() below owns
+     * them and pins them at exactly 100 ns. */
     //DTR2    = 0; HBH
     //ALTDTR2 = 0; HBH
     // HBH PWMCON1bits.MDCS  = 0;    //MDC
