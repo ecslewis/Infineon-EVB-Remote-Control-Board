@@ -55,6 +55,31 @@
                          ((uint16_t)(CLAMP_IDLE_OVRDAT) << 6) |               \
                          CLAMP_OVREN_MASK))
 
+/* Handing the pins between override and module makes the dead-time generator
+ * treat the changeover as an edge: it starts a DTR3 count and emits the result
+ * one dead time later.  Measured directly - with CLAMP_DT_NS at 100 the blip on
+ * GH sat 100 ns after the override write, and at 500 it moved to 500 ns.
+ *
+ * So the handoff is done with the dead-time registers at zero.  With no delay
+ * stage there is nothing to re-run and nothing to emit.  They are restored
+ * immediately afterwards, roughly 9.7 us ahead of the first real clamp edge, so
+ * the generator is fully armed long before it matters.  DTR3/ALTDTR3 are not
+ * double-buffered, which is exactly why this works: both writes take effect at
+ * once, and neither has an edge in flight to disturb. */
+#define CLAMP_DT_DISARM()                                                      \
+    do                                                                         \
+    {                                                                          \
+        DTR3 = 0;                                                              \
+        ALTDTR3 = 0;                                                           \
+    } while (0)
+
+#define CLAMP_DT_REARM()                                                       \
+    do                                                                         \
+    {                                                                          \
+        DTR3 = CLAMP_DT_CNT;                                                   \
+        ALTDTR3 = CLAMP_DT_CNT;                                                \
+    } while (0)
+
 /* Special event trigger offset from the period start, in PWM counts.  The
  * clamp ISR toggles the override immediately (OSYNC = 0), so it must run at a
  * point where the PWM3 generator is already clear of its DTR3 dead band -
@@ -162,7 +187,11 @@ _PWMSpEventMatchInterrupt(void)
         PTPER = rd_fast_per;
         PDC1 = rd_fast_duty;
         MDC = rd_fast_duty;
+
+        CLAMP_DT_DISARM();   /* no delay stage across the changeover */
         CLAMP_OVR_RELEASE(); /* release LAST - masks the PTPER transient */
+        CLAMP_DT_REARM();    /* ~9.7 us before the first clamp edge */
+
         LATBbits.LATB3 = 0;
         rdson_state = 3;
         break;
@@ -173,9 +202,12 @@ _PWMSpEventMatchInterrupt(void)
      * Re-asserting here is therefore also a no-op on the pins.  Only once the
      * override is back on do PHASE3/PDC3 get parked. */
     case 3:
+        CLAMP_DT_DISARM();  /* same changeover, same precaution */
         CLAMP_OVR_ASSERT(); /* OVRDAT + both enables in one store */
+        CLAMP_DT_REARM();
+
         PHASE3 = 0;
-        PDC3 = CLAMP_PDC3_OFF; /* fail-safe duty; DTR3/ALTDTR3 untouched */
+        PDC3 = CLAMP_PDC3_OFF; /* fail-safe duty */
         rdson_cycle_done = 1;
         rdson_state = 0;
         break;
