@@ -147,9 +147,8 @@ _PWMSpEventMatchInterrupt(void)
 
     switch (rdson_state)
     {
-    /* Arm only. Load the clamp duty one period early so it is already latched
-     * when the slow cycle starts.  DTR3/ALTDTR3 are NEVER written here - they
-     * hold the 100 ns dead time and nothing else. */
+    /* Arm only.  Loads the clamp geometry two periods ahead so it is long
+     * latched by the time the slow cycle arrives. */
     case 0:
         if (rdson_pending == 1)
         {
@@ -173,39 +172,41 @@ _PWMSpEventMatchInterrupt(void)
         PTPER = rd_slow_per;
         PDC1 = rd_slow_duty;
         MDC = rd_slow_duty;
+        /* OSYNC = 1, so this lands on the boundary that starts the slow cycle
+         * - the same boundary PTPER latches on.  The override comes off
+         * exactly as the slow cycle begins, not part way through it. */
+        CLAMP_OVR_RELEASE();
         LATBbits.LATB3 = 1;
         rdson_state = 2;
         break;
 
-    /* Fires ~500 ns INSIDE the slow cycle.  Order still matters: PTPER is
-     * written first, while the override still clamps the pins, then the
-     * override is released last.  Whether a mid-cycle PTPER write can still
-     * kick PWM3 now that the dead-time stage is gone is untested, so it costs
-     * nothing to keep it masked.
+    /* Fires inside the slow cycle.  The duties are deliberately NOT parked
+     * here - that was the bug that killed the pulse.  PDC3/SDC3 latch at the
+     * GENERATOR's period boundary, and a phase shift moves that boundary into
+     * the middle of the master period: with PHASE3 = 9146 against an 18856
+     * count period it sits at master 9710, which is exactly where GH is
+     * supposed to switch on.  Parking the duty at 500 ns therefore latched a
+     * zero at 9710 and the pulse never happened.
      *
-     * The duties are parked here so they latch at the boundary that ends the
-     * slow cycle - the following fast period then starts with both duties at
-     * zero and the clamp genuinely idle, not merely overridden. */
+     * So this only re-asserts the override, on the boundary that ends the slow
+     * cycle (OSYNC = 1).  Together with the release in case 1 the override is
+     * off for precisely one period - the one the clamp needs. */
     case 2:
         PTPER = rd_fast_per;
         PDC1 = rd_fast_duty;
         MDC = rd_fast_duty;
-        PDC3 = CLAMP_DUTY_OFF;
-        SDC3 = CLAMP_DUTY_OFF;
-
-        CLAMP_OVR_RELEASE(); /* release LAST - masks the PTPER write */
-
+        CLAMP_OVR_ASSERT();
         LATBbits.LATB3 = 0;
         rdson_state = 3;
         break;
 
-    /* Fires ~500 ns inside the first fast cycle after the slow one.  Both
-     * duties are zero by now, so the generator is holding GH low and GL high
-     * on its own and re-asserting the override is a no-op on the pins.  The
-     * phase registers are only cleared afterwards, once the override is back
-     * on and there is nothing live to disturb. */
+    /* Fires in the first fast cycle after the slow one, with the override
+     * already back on since the boundary.  Everything is masked now, so this
+     * is where the geometry gets torn down - wherever the deferred duty latch
+     * happens to land, nothing reaches the pins. */
     case 3:
-        CLAMP_OVR_ASSERT(); /* OVRDAT + both enables in one store */
+        PDC3 = CLAMP_DUTY_OFF;
+        SDC3 = CLAMP_DUTY_OFF;
         PHASE3 = 0;
         SPHASE3 = 0;
         rdson_cycle_done = 1;
@@ -328,7 +329,12 @@ void PWM3_ClampInit(void)
     IOCON3bits.POLL = 1;    /* GL active LOW:  duty 0 parks it HIGH       */
     IOCON3bits.SWAP = 0;    /* not needed - edges are placed directly     */
 
-    IOCON3bits.OSYNC = 0;
+    /* OSYNC = 1: override changes land on a period boundary.  That is what
+     * lets the override bracket the slow cycle exactly - released at its
+     * start, re-asserted at its end - so the generator is only ever exposed
+     * for that one period.  The boundary handoff used to notch GL, but that
+     * was the dead-time stage, which no longer exists in this mode. */
+    IOCON3bits.OSYNC = 1;
     IOCON3bits.OVRDAT = CLAMP_IDLE_OVRDAT; /* idle: GH = 0, GL = 1        */
     IOCON3bits.OVRENH = 1;
     IOCON3bits.OVRENL = 1;
