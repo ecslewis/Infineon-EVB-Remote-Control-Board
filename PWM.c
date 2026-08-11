@@ -151,11 +151,26 @@ _PWMSpEventMatchInterrupt(void)
      * PTPER/PDC1/MDC are restored here as before - they latch at the next
      * boundary, so exactly one slow cycle happens. */
     case 2:
+        /* ===== TEMPORARY BISECTION INSTRUMENTATION - REMOVE WHEN DONE =====
+         * LATB3 is used here as a scope marker instead of an LED.  It brackets
+         * each candidate write so the blip can be located by inspection rather
+         * than by guesswork:
+         *
+         *   LATB3 HIGH  window  = the override release
+         *   LATB3 LOW   window  = the PTPER write
+         *   LATB3 HIGH  window  = the PDC1 / MDC writes
+         *
+         * Trigger on GH's blip and read which LATB3 window it falls inside.
+         * That identifies the offending write in one capture.
+         * ================================================================= */
+        LATBbits.LATB3 = 1;  /* marker A: open override window */
         CLAMP_OVR_RELEASE(); /* single store - never two BCLRs, see macro */
+        LATBbits.LATB3 = 0;  /* marker B: close override, open PTPER window */
         PTPER = rd_fast_per;
+        LATBbits.LATB3 = 1;  /* marker C: close PTPER, open PDC1/MDC window */
         PDC1 = rd_fast_duty;
         MDC = rd_fast_duty;
-        LATBbits.LATB3 = 0;
+        LATBbits.LATB3 = 0;  /* marker D: close all windows */
         rdson_state = 3;
         break;
 
