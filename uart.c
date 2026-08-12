@@ -226,7 +226,7 @@ void __attribute__((interrupt, no_auto_psv)) _U1RXInterrupt(void) {
                 uint16_t freq_khz = ((uint16_t)rx_buf[4] << 8)
                                      | rx_buf[5];
                 new_freq  = (uint32_t)freq_khz * 1000UL;
-                new_duty  = rx_buf[6];
+                new_duty  = 100-rx_buf[6];
                 new_dt_ns = ((uint16_t)rx_buf[7] << 8)
                              | rx_buf[8];
                 pwm_mode2_pending = 1;
