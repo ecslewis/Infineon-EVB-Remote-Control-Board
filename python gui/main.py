@@ -440,14 +440,24 @@ class App:
         freq, duty = self._get_freq_duty()
         if freq is None:
             return
-        if self.ctrl.pwm_mode1(freq, duty):
+        try:
+            dt = int(self.dt_entry.get())
+            if not (0 <= dt <= 500):
+                self.status.config(
+                    text="Error: Dead-time must be 0 – 500 ns",
+                    fg=self.RED)
+                return
+        except ValueError:
+            self.status.config(text="Error: Enter valid dead-time",
+                            fg=self.RED)
+            return
+        if self.ctrl.pwm_mode1(freq, duty, dt):
             self.status.config(
-                text=f"Mode 1 active AC-ZVS  ·  {freq} kHz  ·  {duty}% duty",
+                text=f"Mode 1 active AC-ZVS  ·  {freq} kHz  ·  {duty}% duty  ·  {dt} ns DT",
                 fg=self.GREEN)
         else:
             self.status.config(text="Error: Transmission failed",
-                               fg=self.RED)
-
+                            fg=self.RED)
     def start_mode2(self):
         freq, duty = self._get_freq_duty()
         if freq is None:

@@ -375,7 +375,7 @@ void INT1_Init(void)
     IPC5bits.INT1IP = 7; // Priority 6
     IEC1bits.INT1IE = 1; // Enable
 }
-static void Timer3_LoadAndStart_12ms(void)
+static void Timer3_LoadAndStart_10ms(void)
 {
     T3CONbits.TON = 0;
     T3CONbits.TCS = 0;
@@ -385,7 +385,7 @@ static void Timer3_LoadAndStart_12ms(void)
 
     // 12ms @ FCY=39613750 with 1:256 prescaler
     // (39613750 / 256) * 0.012 ? 1857
-    PR3 = 1417U;
+    PR3 = 1384U;
 
     IFS0bits.T3IF = 0;
     IPC2bits.T3IP = 6;
@@ -402,6 +402,36 @@ static void Timer3_LoadAndStart_200us(void)
     // 200us @ FCY=39613750
     // 39613750 * 0.0002 = 7922 counts
     PR3 = 7922U;
+    IFS0bits.T3IF = 0;
+    IPC2bits.T3IP = 6; // Priority 6 [1]
+    IEC0bits.T3IE = 1;
+    T3CONbits.TON = 1;
+}
+static void Timer3_LoadAndStart_310us(void)
+{
+    T3CONbits.TON = 0;
+    T3CONbits.TCS = 0; // Internal FCY [1]
+    T3CONbits.TGATE = 0;
+    T3CONbits.TCKPS = 0b00; // 1:1 prescaler [1]
+    TMR3 = 0;
+    // 200us @ FCY=39613750
+    // 39613750 * 0.0002 = 7922 counts
+    PR3 = 12281U;
+    IFS0bits.T3IF = 0;
+    IPC2bits.T3IP = 6; // Priority 6 [1]
+    IEC0bits.T3IE = 1;
+    T3CONbits.TON = 1;
+}
+static void Timer3_LoadAndStart_330us(void)
+{
+    T3CONbits.TON = 0;
+    T3CONbits.TCS = 0; // Internal FCY [1]
+    T3CONbits.TGATE = 0;
+    T3CONbits.TCKPS = 0b00; // 1:1 prescaler [1]
+    TMR3 = 0;
+    // 200us @ FCY=39613750
+    // 39613750 * 0.0002 = 7922 counts
+    PR3 = 13072U;
     IFS0bits.T3IF = 0;
     IPC2bits.T3IP = 6; // Priority 6 [1]
     IEC0bits.T3IE = 1;
@@ -466,7 +496,7 @@ void __attribute__((interrupt, no_auto_psv)) _INT1Interrupt(void)
 
         // Start 200us delay before turning PWM2 ON
         zc_state = ZC_WAIT_DT1_ON;
-        Timer3_LoadAndStart_200us();
+        Timer3_LoadAndStart_310us();
     }
     else
     {
@@ -495,7 +525,7 @@ void __attribute__((interrupt, no_auto_psv)) _INT1Interrupt(void)
 
         // Start 200us delay before turning PWM1 ON
         zc_state = ZC_WAIT_DT1_OFF;
-        Timer3_LoadAndStart_200us();
+        Timer3_LoadAndStart_310us();
     }
 
     // Toggle edge for next interrupt [1]
@@ -524,7 +554,6 @@ void __attribute__((interrupt, no_auto_psv)) _T2Interrupt(void)
         PDC1 = compare;
     else
         PDC2 = compare;
-
     if (pwm_ramp_current_freq > pwm_ramp_target_freq)
     {
         Timer2_LoadAndStart_20us();
@@ -587,7 +616,7 @@ void __attribute__((interrupt, no_auto_psv)) _T3Interrupt(void)
 
         zc_state = ZC_WAIT_DT4_ON;
         PWM1_StartRampDown(new_freq, new_duty);
-        Timer3_LoadAndStart_12ms();
+        Timer3_LoadAndStart_10ms();
         break;
     }
     case ZC_WAIT_DT3_ON:
@@ -600,7 +629,7 @@ void __attribute__((interrupt, no_auto_psv)) _T3Interrupt(void)
         IOCON2bits.OVRENH = 1;
         IOCON2bits.OVRENL = 1;
         zc_state = ZC_IDLE;
-        Timer3_LoadAndStart_200us();
+        Timer3_LoadAndStart_330us();
         break;
     }
     case ZC_WAIT_DT4_ON:
@@ -647,7 +676,7 @@ void __attribute__((interrupt, no_auto_psv)) _T3Interrupt(void)
 
         zc_state = ZC_WAIT_DT3_OFF;
         PWM2_StartRampDown(new_freq, new_duty);
-        Timer3_LoadAndStart_12ms();
+        Timer3_LoadAndStart_10ms();
         break;
     }
     case ZC_WAIT_DT4_OFF:
@@ -660,7 +689,7 @@ void __attribute__((interrupt, no_auto_psv)) _T3Interrupt(void)
         IOCON1bits.OVRENH = 1;
         IOCON1bits.OVRENL = 1;
         zc_state = ZC_IDLE;
-        Timer3_LoadAndStart_200us();
+        Timer3_LoadAndStart_330us();
         break;
     }
     case ZC_WAIT_DT3_OFF:
