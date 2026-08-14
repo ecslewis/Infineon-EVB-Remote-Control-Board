@@ -27,6 +27,13 @@
 #define RAMP_STEP_HZ 8000UL       /* frequency decrement per tick   */
 #define RAMP_TICK_US 20UL         /* time between ramp steps        */
 
+/* Poll the special-event flag so the override is released at a known point
+ * inside the OFF part of the cycle.  Turned ON by default: the scope
+ * captures show the first FALLING edge and every edge after it already land
+ * on a correct 500 kHz grid, and only the first RISING edge is early - i.e.
+ * the generator's timing was never the problem, the unmute instant was. */
+#define ACZVS_RELEASE_ON_SEVT 1
+
 /* High-resolution period, in 1/(8*FPWM) = 1.06 ns counts.
  *
  * The old expression, (uint16_t)((FPWM / freq) - 1) * 8, truncated
@@ -560,6 +567,48 @@ static void Timer2_LoadAndStart_20us(void)
     T2CONbits.TON = 1;
 }
 
+/* ---------------------------------------------------------------------- *
+ * Arm the generator at ACZVS_START_FREQ 200 us BEFORE the pins are unmuted.
+ *
+ * Second attempt at the first-pulse bug.  The first attempt stopped the time
+ * base in ZC_WAIT_DT2_ON, loaded PTPER there and restarted - on the
+ * assumption that with PTEN = 0 the writes reach the comparators directly and
+ * PTMR restarts from zero.  Measurement says otherwise: the first period
+ * still comes out at a random width between "the ramp's end frequency" and
+ * "much too short", which is what you get if PTEN = 0 neither resets PTMR nor
+ * forces the PTPER buffer to transfer.  The first cycle was still running on
+ * the OLD period, from a stale count.
+ *
+ * So stop relying on PTEN semantics entirely.  The time base is left RUNNING
+ * the whole time (it always was, before the first fix) and the new period is
+ * written 200 us early.  PTPER is double-buffered off a rollover, and at the
+ * ramp-end frequency a rollover happens every 10 us at worst, so by the time
+ * the pins are unmuted the generator has been free-running at a verified
+ * 500 kHz for ~100 cycles.  The pins are simply muted while it does.
+ *
+ * That decouples the two problems.  Period correctness is now guaranteed by
+ * construction; the only thing left is WHEN the pins are unmuted, and the
+ * worst that can do is clip the first pulse narrow - it can no longer change
+ * its frequency.
+ * ---------------------------------------------------------------------- */
+static void ACZVS_ArmStartFreq(void)
+{
+    PTCONbits.PTEN = 1; /* keep it running - do NOT stop the base */
+
+    PWMCON1bits.IUE = 0; /* duty latches at the boundary */
+    PWMCON2bits.IUE = 0;
+    PWMCON1bits.MDCS = 0; /* PDCx is the duty source      */
+    PWMCON2bits.MDCS = 0;
+    PWMCON1bits.ITB = 0; /* PTPER is the period          */
+    PWMCON2bits.ITB = 0;
+    PHASE1 = 0;
+    PHASE2 = 0;
+
+    PTPER = aczvs_start_per;
+    PDC1 = aczvs_start_dty;
+    PDC2 = aczvs_start_dty;
+}
+
 /* Stop a ramp dead.  Called from INT1 so a ramp still in flight can never
  * keep writing PTPER/PDCx into the next half-cycle's setup sequence. */
 static void Ramp_Abort(void)
@@ -719,6 +768,10 @@ void __attribute__((interrupt, no_auto_psv)) _T3Interrupt(void)
         IOCON1bits.PENL = 1;
         OVR_ASSERT(IOCON1, 0b00);
 
+        /* Arm 500 kHz NOW, 200 us before the pins are unmuted, so the period
+         * is long since latched by the time anything reaches the pad. */
+        ACZVS_ArmStartFreq();
+
         // Start second delay
         zc_state = ZC_WAIT_DT2_ON;
         Timer3_LoadAndStart_200us();
@@ -728,55 +781,47 @@ void __attribute__((interrupt, no_auto_psv)) _T3Interrupt(void)
     case ZC_WAIT_DT2_ON:
     {
         /* ---------------------------------------------------------------- *
-         * Bring PWM1 up cleanly at ACZVS_START_FREQ.  THIS is the oversized
-         * first pulse.
+         * Unmute PWM1.  Nothing else.
          *
-         * What used to happen: the override was released here, mid-period,
-         * while PTPER still held the PREVIOUS half-cycle's ramped-down value
-         * (e.g. 9424 counts = 100 kHz).  PTPER is double-buffered, so the
-         * 500 kHz value written on the next line does not reach the period
-         * comparator until the next rollover - up to a full 10 us away.  The
-         * first live cycle therefore ran at the OLD, slow period with the
-         * new ~1 us duty compare, which on PWM1L is a ~9 us pulse: the "very
-         * large first pulse".  From cycle 2 the new PTPER is latched and
-         * everything looks right, which matches "it stabilises after 1-2
-         * cycles".  Its width jittered because the release landed at a
-         * random point in that period, set by T3 interrupt latency.
+         * The generator has been free-running at 500 kHz since
+         * ACZVS_ArmStartFreq() ran 200 us ago, so there is no period to load
+         * here and no time base to restart - both of those were what made the
+         * first pulse come out at the wrong FREQUENCY.  All that is left is
+         * lifting the override, and OSYNC = 1 (set in PWM_Mode) asks the
+         * hardware to do that on a period boundary.
          *
-         * Fix: stop the time base, load period and duty while it is stopped
-         * (writes go straight to the comparators with PTEN = 0), release the
-         * override while the pins cannot move, then start.  The first edge
-         * is then the count-0 edge of a whole 500 kHz period.
-         *
-         * SCOPE CHECK: measure the width of the very first PWM1H pulse of a
-         * half-cycle.  It must equal the steady 500 kHz pulse.  If it comes
-         * out SHORT rather than correct, this part has PTMR not resetting on
-         * PTEN = 0; in that case delete the PTEN lines here and instead set
-         * IOCON1bits.OSYNC = 1 in PWM_Mode(), which makes the override
-         * release latch at a period boundary in hardware - the same boundary
-         * PTPER and PDC1 latch on.
+         * SCOPE CHECK, in this order:
+         *   1. Is the first pulse now at 500 kHz - right PERIOD, even if its
+         *      width is off?  If yes, the period problem is solved and only
+         *      edge alignment is left.  If it is still a random frequency,
+         *      the period is not latching and PTPER is not the mechanism -
+         *      tell me and we look at MDCS / ITB / the high-res clock.
+         *   2. Is the first pulse full width?  If it is sometimes narrow but
+         *      always at 500 kHz, OSYNC does not gate the enable bits on this
+         *      part - enable the SEVT-polled release below.
          * ---------------------------------------------------------------- */
-        PTCONbits.PTEN = 0;
 
-        PWMCON1bits.IUE = 0; /* duty latches at the boundary   */
-        PWMCON2bits.IUE = 0;
-        PWMCON1bits.MDCS = 0; /* PDC1 is the duty source        */
-        PWMCON2bits.MDCS = 0;
-        PWMCON1bits.ITB = 0; /* PTPER is the period            */
-        PWMCON2bits.ITB = 0;
-        PHASE1 = 0;
-        PHASE2 = 0;
-
-        PTPER = aczvs_start_per;
-        PDC1 = aczvs_start_dty;
-        PDC2 = aczvs_start_dty;
+        /* Optional: release inside the OFF part of the cycle so the pin does
+         * not move at unmute time and the first edge the load sees is a real
+         * count-0 edge.  PSEMIF sets once per period at SEVTCMP; SEVTCMP is
+         * parked past the duty compare in PWM_Mode(), so waiting for the flag
+         * puts us at a known safe point.  Bounded so a stalled time base
+         * cannot hang the ISR.  Switch ACZVS_RELEASE_ON_SEVT to 1 to use it.
+         */
+#if ACZVS_RELEASE_ON_SEVT
+        {
+            uint16_t guard = 0;
+            IFS3bits.PSEMIF = 0;
+            while (!IFS3bits.PSEMIF && (++guard < 8000u))
+                ;
+            IFS3bits.PSEMIF = 0;
+        }
+#endif
 
         IOCON1bits.PMOD = 0b00; /* complementary, still overridden */
         IOCON1bits.PENH = 1;
         IOCON1bits.PENL = 1;
         OVR_RELEASE(IOCON1); /* one store - both halves together */
-
-        PTCONbits.PTEN = 1;
 
         zc_state = ZC_WAIT_DT4_ON;
         PWM1_StartRampDown(new_freq, new_duty);
@@ -815,6 +860,9 @@ void __attribute__((interrupt, no_auto_psv)) _T3Interrupt(void)
         IOCON1bits.PENL = 1;
         OVR_ASSERT(IOCON1, 0b11); // both high, one store
 
+        /* Arm 500 kHz 200 us early, same as the ON path. */
+        ACZVS_ArmStartFreq();
+
         // Start second delay
         zc_state = ZC_WAIT_DT2_OFF;
         Timer3_LoadAndStart_200us();
@@ -822,29 +870,22 @@ void __attribute__((interrupt, no_auto_psv)) _T3Interrupt(void)
     }
     case ZC_WAIT_DT2_OFF:
     {
-        /* Mirror of ZC_WAIT_DT2_ON - same clean restart, PWM2 this time.
-         * See the long comment there for why the time base is stopped. */
-        PTCONbits.PTEN = 0;
-
-        PWMCON1bits.IUE = 0;
-        PWMCON2bits.IUE = 0;
-        PWMCON1bits.MDCS = 0;
-        PWMCON2bits.MDCS = 0;
-        PWMCON1bits.ITB = 0;
-        PWMCON2bits.ITB = 0;
-        PHASE1 = 0;
-        PHASE2 = 0;
-
-        PTPER = aczvs_start_per;
-        PDC2 = aczvs_start_dty;
-        PDC1 = aczvs_start_dty;
+        /* Mirror of ZC_WAIT_DT2_ON - unmute PWM2, nothing else.  The period
+         * was armed 200 us ago in ZC_WAIT_DT1_OFF. */
+#if ACZVS_RELEASE_ON_SEVT
+        {
+            uint16_t guard = 0;
+            IFS3bits.PSEMIF = 0;
+            while (!IFS3bits.PSEMIF && (++guard < 8000u))
+                ;
+            IFS3bits.PSEMIF = 0;
+        }
+#endif
 
         IOCON2bits.PMOD = 0b00; /* complementary, still overridden */
         IOCON2bits.PENH = 1;
         IOCON2bits.PENL = 1;
         OVR_RELEASE(IOCON2); /* one store */
-
-        PTCONbits.PTEN = 1;
 
         zc_state = ZC_WAIT_DT3_OFF;
         PWM2_StartRampDown(new_freq, new_duty);
@@ -1034,12 +1075,29 @@ void PWM_Mode(uint32_t freq, uint8_t duty, uint16_t dt_ns)
     DTR2 = dt_ns;
     ALTDTR2 = dt_ns;
 
-    /* The special-event (PSEM) interrupt is the Rd(on) clamp's, and the
-     * clamp is a DC-ZVS feature.  Enabling it here made it fire every PWM
-     * period throughout AC-ZVS for nothing, adding latency to the T2 and T3
-     * handlers whose timing actually matters.  Left disabled; the ISR also
-     * bails out on ac_zvs now as a second line of defence. */
-    PTCONbits.SEIEN = 0;
+    /* Override changes latch on a period boundary instead of the instant the
+     * store retires.  This is the hardware answer to "the pins went live
+     * halfway through a cycle".  It also makes the INT1 kill synchronous,
+     * costing at most one period (2 us at 500 kHz) against a 310 us dead
+     * time - a trade worth making. */
+    IOCON1bits.OSYNC = 1;
+    IOCON2bits.OSYNC = 1;
+
+    /* The special-event (PSEM) INTERRUPT is the Rd(on) clamp's, and the clamp
+     * is a DC-ZVS feature.  Enabling it here made it fire every PWM period
+     * throughout AC-ZVS for nothing, adding latency to the T2 and T3 handlers
+     * whose timing actually matters.  The interrupt stays off - but the
+     * comparator itself is left running and SEVTCMP is parked in the OFF part
+     * of the 500 kHz cycle, so PSEMIF can be POLLED as a "where am I in the
+     * period" marker by the optional release path in ZC_WAIT_DT2_ON. */
+    /* Park it just past the duty compare, near the START of the OFF region,
+     * so there is the most possible margin (~0.9 us = ~35 instruction
+     * cycles) between spotting the flag and the rollover.  Landing late
+     * would put the release back inside the ON region and reintroduce the
+     * runt, so the margin matters more than being close to the boundary. */
+    SEVTCMP = (uint16_t)(aczvs_start_dty +
+                         ((uint16_t)(aczvs_start_per - aczvs_start_dty) / 8u));
+    PTCONbits.SEIEN = 1; /* comparator on, interrupt off */
     IEC3bits.PSEMIE = 0;
     IFS3bits.PSEMIF = 0;
 
