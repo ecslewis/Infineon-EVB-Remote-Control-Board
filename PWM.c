@@ -31,8 +31,22 @@
  * inside the OFF part of the cycle.  Turned ON by default: the scope
  * captures show the first FALLING edge and every edge after it already land
  * on a correct 500 kHz grid, and only the first RISING edge is early - i.e.
- * the generator's timing was never the problem, the unmute instant was. */
+ * the generator's timing was never the problem, the unmute instant was.
+ * THIS IS THE ONE THAT FIXED THE FIRST PULSE.  Leave it at 1. */
 #define ACZVS_RELEASE_ON_SEVT 1
+
+/* Hardware synchronisation of override changes to the period boundary.
+ *
+ * NOW OFF.  This went in at the same time as ACZVS_RELEASE_ON_SEVT and is
+ * the prime suspect for the ~0.4 us dropout that appeared on the HELD-ON
+ * leg at the 200 us step.  OSYNC changes how the override logic drives the
+ * pad on every generator it is set on - including the leg that is supposed
+ * to be sitting still - whereas the SEVT-polled release achieves the same
+ * alignment in software and only affects the leg being unmuted.  With the
+ * SEVT release doing the work, OSYNC is redundant.
+ *
+ * Set back to 1 only to A/B it. */
+#define ACZVS_USE_OSYNC 0
 
 /* High-resolution period, in 1/(8*FPWM) = 1.06 ns counts.
  *
@@ -590,23 +604,40 @@ static void Timer2_LoadAndStart_20us(void)
  * construction; the only thing left is WHEN the pins are unmuted, and the
  * worst that can do is clip the first pulse narrow - it can no longer change
  * its frequency.
+ *
+ * TOUCH ONE LEG ONLY.  The first version of this wrote PWMCON1 *and*
+ * PWMCON2, PHASE1 *and* PHASE2, PDC1 *and* PDC2 on every call - including
+ * the registers of the leg that is being held statically ON by its override
+ * for this whole half-cycle.  Those writes are supposed to be invisible
+ * because the override sits downstream of the duty comparator, but "supposed
+ * to be invisible" is exactly the assumption that has been wrong twice in
+ * this module already, and it is free to not make it.  ch selects the leg
+ * that is about to start switching; the other leg is not addressed at all.
  * ---------------------------------------------------------------------- */
-static void ACZVS_ArmStartFreq(void)
+static void ACZVS_ArmStartFreq(uint8_t ch)
 {
     PTCONbits.PTEN = 1; /* keep it running - do NOT stop the base */
 
-    PWMCON1bits.IUE = 0; /* duty latches at the boundary */
-    PWMCON2bits.IUE = 0;
-    PWMCON1bits.MDCS = 0; /* PDCx is the duty source      */
-    PWMCON2bits.MDCS = 0;
-    PWMCON1bits.ITB = 0; /* PTPER is the period          */
-    PWMCON2bits.ITB = 0;
-    PHASE1 = 0;
-    PHASE2 = 0;
-
+    /* PTPER is the shared master period - unavoidable, and it is what makes
+     * the first cycle come out at 500 kHz. */
     PTPER = aczvs_start_per;
-    PDC1 = aczvs_start_dty;
-    PDC2 = aczvs_start_dty;
+
+    if (ch == 1)
+    {
+        PWMCON1bits.IUE = 0;  /* duty latches at the boundary */
+        PWMCON1bits.MDCS = 0; /* PDC1 is the duty source      */
+        PWMCON1bits.ITB = 0;  /* PTPER is the period          */
+        PHASE1 = 0;
+        PDC1 = aczvs_start_dty;
+    }
+    else
+    {
+        PWMCON2bits.IUE = 0;
+        PWMCON2bits.MDCS = 0;
+        PWMCON2bits.ITB = 0;
+        PHASE2 = 0;
+        PDC2 = aczvs_start_dty;
+    }
 }
 
 /* Stop a ramp dead.  Called from INT1 so a ramp still in flight can never
@@ -769,8 +800,10 @@ void __attribute__((interrupt, no_auto_psv)) _T3Interrupt(void)
         OVR_ASSERT(IOCON1, 0b00);
 
         /* Arm 500 kHz NOW, 200 us before the pins are unmuted, so the period
-         * is long since latched by the time anything reaches the pad. */
-        ACZVS_ArmStartFreq();
+         * is long since latched by the time anything reaches the pad.
+         * PWM1 is the leg that starts switching at DT2_ON; PWM2 is the one
+         * held statically high, and none of its registers are touched. */
+        ACZVS_ArmStartFreq(1);
 
         // Start second delay
         zc_state = ZC_WAIT_DT2_ON;
@@ -860,8 +893,9 @@ void __attribute__((interrupt, no_auto_psv)) _T3Interrupt(void)
         IOCON1bits.PENL = 1;
         OVR_ASSERT(IOCON1, 0b11); // both high, one store
 
-        /* Arm 500 kHz 200 us early, same as the ON path. */
-        ACZVS_ArmStartFreq();
+        /* Arm 500 kHz 200 us early, same as the ON path.  Here PWM2 is the
+         * leg that starts switching at DT2_OFF and PWM1 is the held one. */
+        ACZVS_ArmStartFreq(2);
 
         // Start second delay
         zc_state = ZC_WAIT_DT2_OFF;
@@ -1075,13 +1109,16 @@ void PWM_Mode(uint32_t freq, uint8_t duty, uint16_t dt_ns)
     DTR2 = dt_ns;
     ALTDTR2 = dt_ns;
 
-    /* Override changes latch on a period boundary instead of the instant the
-     * store retires.  This is the hardware answer to "the pins went live
-     * halfway through a cycle".  It also makes the INT1 kill synchronous,
-     * costing at most one period (2 us at 500 kHz) against a 310 us dead
-     * time - a trade worth making. */
+#if ACZVS_USE_OSYNC
     IOCON1bits.OSYNC = 1;
     IOCON2bits.OSYNC = 1;
+#else
+    /* Explicitly OFF.  The SEVT-polled release in ZC_WAIT_DT2_* already
+     * lands the unmute on a safe point, and it does so without changing how
+     * the override drives the pad on the leg that must stay put. */
+    IOCON1bits.OSYNC = 0;
+    IOCON2bits.OSYNC = 0;
+#endif
 
     /* The special-event (PSEM) INTERRUPT is the Rd(on) clamp's, and the clamp
      * is a DC-ZVS feature.  Enabling it here made it fire every PWM period
