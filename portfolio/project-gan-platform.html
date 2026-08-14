@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Universal ZVS / Characterization Platform &mdash; Ella Lewis</title>
+<link rel="stylesheet" href="style.css">
+<noscript><style>
+  /* JavaScript off: show everything immediately, no animation */
+  .reveal{opacity:1!important;transform:none!important;filter:none!important}
+  .spec-strip .spec{opacity:1!important;transform:none!important}
+  .section-head .rule{transform:scaleX(1)!important}
+  .timeline .tl-item::before{transform:scale(1)!important}
+</style></noscript>
+</head>
+<body>
+
+<header class="site-header">
+  <nav class="nav">
+    <a class="brand" href="index.html">ella_lewis<span class="dot">.</span>eng</a>
+    <div class="nav-links">
+      <a href="index.html">home</a>
+      <a href="projects.html" class="active">projects</a>
+      <a href="research.html" class="">research</a>
+      <a href="about.html">about</a>
+      <a href="contact.html">contact</a>
+      <a href="resume.pdf">resume &#8599;</a>
+    </div>
+  </nav>
+</header>
+
+<main class="wrap">
+
+  <section class="hero" style="padding-bottom:24px">
+    <a class="back" href="projects.html">&larr; back to projects</a>
+    <span class="kicker">Embedded &middot; Power Electronics &middot; New Product Development</span>
+    <h1 style="font-size:clamp(1.8rem,4vw,2.7rem)">Universal ZVS &amp; Characterization Platform for 900&nbsp;V GaN BDS</h1>
+    <p class="lead">A dsPIC control daughter card and Python GUI that drive a 900&nbsp;V GaN bidirectional switch through soft-switching, converter and pulsed-characterization modes &mdash; built to stay accurate in an EMI environment that eats ordinary serial links.</p>
+  </section>
+
+  <section class="tight">
+    <div class="spec-strip">
+      <div class="spec"><div class="k">Timing resolution</div><div class="v">1.04 ns</div></div>
+      <div class="spec"><div class="k">MCU</div><div class="v">dsPIC33EP32GS502</div></div>
+      <div class="spec"><div class="k">Link</div><div class="v">RS-485 + CRC</div></div>
+      <div class="spec"><div class="k">Pulse rate</div><div class="v">25&ndash;50 kHz</div></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="cols">
+      <div>
+        <div class="section-head">
+          <span class="idx">01</span><h2>The problem</h2><span class="rule"></span>
+        </div>
+        <p>Characterizing a new bidirectional GaN device means changing switching frequency, duty cycle, dead-time and gate mode constantly &mdash; on a converter running hundreds of volts. Doing that by reflashing firmware or reaching into a live power stage is slow and unsafe.</p>
+        <p>It is also electrically hostile. GaN slews at roughly 100&nbsp;V/ns, and the inductive currents around the stage will corrupt a plain single-ended UART link without much effort.</p>
+        <div class="section-head" style="margin-top:48px">
+          <span class="idx">02</span><h2>What I built</h2><span class="rule"></span>
+        </div>
+        <p>A dsPIC33 daughter card sits on the evaluation board and owns everything real-time critical: PWM generation, dead-time insertion down to nanosecond steps, special-event triggering and the R<sub>DS(on)</sub> measurement cycle. A Python GUI on the host sets operating mode, switching frequency, duty cycle, dead-time and gate configuration.</p>
+        <p>Communication runs over RS-485 differential signalling with a CRC layer on top, so a corrupted command is rejected rather than executed. That combination &mdash; differential physical layer plus integrity check &mdash; is what makes remote control trustworthy next to a switching GaN stage.</p>
+        <figure>
+          <span class="shot"><img src="images/gan-board-front.jpg" alt="Control daughter card, front side, showing DSP and headers"></span>
+          <figcaption>Control daughter card &mdash; DSP, programming header and PWM output.</figcaption>
+        </figure>
+        <figure>
+          <span class="shot"><img src="images/gan-board-back.jpg" alt="Control daughter card, back side"></span>
+          <figcaption>Back side &mdash; decoupling and transceiver support components.</figcaption>
+        </figure>
+        <div class="section-head" style="margin-top:48px">
+          <span class="idx">03</span><h2>Operating modes</h2><span class="rule"></span>
+        </div>
+        <table class="spec-table">
+            <tr><td>AC-ZVS</td><td>Polarity detection with adaptive PWM to avoid shoot-through</td></tr>
+            <tr><td>DC-ZVS</td><td>DC-side zero-voltage switching</td></tr>
+            <tr><td>Buck / Boost (SSW)</td><td>Converter operation via the same gate engine</td></tr>
+            <tr><td>Dynamic pulsed</td><td>R<sub>on</sub> measurement, dynamic saturation current</td></tr>
+        </table>
+        <p>High-frequency operation includes a single 25&ndash;50&nbsp;kHz pulse used for on-state resistance measurement. Four gate operation modes are selectable from the GUI.</p>
+        <p class="note">Platform is also compatible with unidirectional devices &mdash; MOSFETs and unidirectional GaN switches.</p>
+        <div class="section-head" style="margin-top:48px">
+          <span class="idx">04</span><h2>System architecture</h2><span class="rule"></span>
+        </div>
+        <figure>
+          <span class="shot"><img src="images/gan-overview.jpg" alt="DSP control system overview diagram for the GaN 900 V BDS EVB"></span>
+          <figcaption>Control system overview: PWM signal logic &rarr; UART/RS-485 link &rarr; standalone GUI control.</figcaption>
+        </figure>
+        <div class="section-head" style="margin-top:48px">
+          <span class="idx">05</span><h2>Bench measurements</h2><span class="rule"></span>
+        </div>
+        <p>Captures from bring-up and mode validation on the Tektronix bench. <!-- EDIT THE CAPTIONS: I described the instrument settings visible on screen, but you know which node each probe was on and what the device was doing. --></p>
+
+        <figure>
+          <span class="shot"><img src="images/scope-gate-timing.png" alt="Four-channel oscilloscope capture at 10 microseconds per division showing gate drive timing"></span>
+          <figcaption>
+            Gate timing across all four channels, 10&nbsp;µs/div &mdash; a continuous PWM train
+            on Ch4 alongside single-shot pulses on Ch1&ndash;Ch3, with the complementary pair
+            visibly non-overlapping. 1.5625&nbsp;GS/s at 640&nbsp;ps/pt, 13-bit High Res,
+            triggered on Ch2 at 1.88&nbsp;V. Ch4 max 3.841&nbsp;V, Ch3 min &minus;481.9&nbsp;mV.
+          </figcaption>
+        </figure>
+
+        <figure>
+          <span class="shot"><img src="images/scope-polarity.png" alt="Oscilloscope capture at 20 milliseconds per division showing complementary switching at 1.45 kHz"></span>
+          <figcaption>
+            Complementary switching over a long window, 20&nbsp;ms/div. Cursors read
+            &Delta;t&nbsp;=&nbsp;691.7&nbsp;µs &rarr; 1.45&nbsp;kHz between the marked edges.
+            16-bit High Res at 1.25&nbsp;MS/s, 423 acquisitions, with Math1 set to Diff(Ch3).
+          </figcaption>
+        </figure>
+
+        <figure>
+          <span class="shot"><img src="images/scope-burst.png" alt="Zoomed oscilloscope capture showing a high-frequency burst starting on an enable edge"></span>
+          <figcaption>
+            Single-shot burst capture with a 20&times; zoom window at 500&nbsp;µs/div. The
+            high-frequency train on Ch3 starts cleanly on the Ch2 enable edge;
+            cursors give &Delta;t&nbsp;=&nbsp;397.7&nbsp;µs (2.51&nbsp;kHz) across the
+            marked interval. 16-bit High Res, single acquisition.
+          </figcaption>
+        </figure>
+
+        <p>
+          Bandwidth limiting varies with the timescale &mdash; 500&nbsp;MHz for the
+          microsecond-scale gate timing, dropped to 1&nbsp;MHz and 500&nbsp;kHz for the
+          longer windows. Around a stage slewing at roughly 100&nbsp;V/ns, leaving the full
+          bandwidth open on a millisecond capture buys you radiated noise rather than signal.
+        </p>
+
+        <div class="section-head" style="margin-top:48px">
+          <span class="idx">06</span><h2>What's next</h2><span class="rule"></span>
+        </div>
+        <p>Bidirectional device support is the current focus, along with streaming measurement data straight from the firmware into the analysis pipeline rather than capturing it separately on the scope.</p>
+      </div>
+      <aside>
+        <div class="panel" style="margin-bottom:20px">
+          <h3 style="margin-top:0">At a glance</h3>
+          <table class="spec-table">
+            <tr><td>Role</td><td>Firmware, host software, board</td></tr>
+            <tr><td>Timeline</td><td>2026 &mdash; ongoing</td></tr>
+            <tr><td>Languages</td><td>C, Python</td></tr>
+            <tr><td>Toolchain</td><td>MPLAB X, MCC</td></tr>
+            <tr><td>Comms</td><td>RS-485 differential</td></tr>
+            <tr><td>Device</td><td>900 V GaN bidirectional switch</td></tr>
+            <tr><td>Context</td><td>Infineon Technologies</td></tr>
+          </table>
+          <div class="btn-row" style="margin-top:20px">
+            <a class="btn" href="https://github.com/ecslewis/Infineon-EVB-Remote-Control-Board">Source on GitHub &#8599;</a>
+          </div>
+        </div>
+
+      </aside>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <span>&copy; 2026 Ella Lewis</span>
+    <span>
+      <a href="mailto:elcslewis@gmail.com">email</a> &middot;
+      <a href="https://github.com/ecslewis">github</a> &middot;
+      <a href="https://www.linkedin.com/in/elcslewis/">linkedin</a>
+    </span>
+  </div>
+</footer>
+
+<script src="scroll.js" defer></script>
+
+</body>
+</html>

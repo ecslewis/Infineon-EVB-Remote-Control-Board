@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ella Lewis — Electrical Engineer</title>
+<meta name="description" content="Ella Lewis — electrical engineer working in GaN power electronics, PCB design and embedded firmware.">
+<link rel="stylesheet" href="style.css">
+<noscript><style>
+  /* JavaScript off: show everything immediately, no animation */
+  .reveal{opacity:1!important;transform:none!important;filter:none!important}
+  .spec-strip .spec{opacity:1!important;transform:none!important}
+  .section-head .rule{transform:scaleX(1)!important}
+  .timeline .tl-item::before{transform:scale(1)!important}
+</style></noscript>
+</head>
+<body>
+
+<header class="site-header">
+  <nav class="nav">
+    <a class="brand" href="index.html">ella_lewis<span class="dot">.</span>eng</a>
+    <div class="nav-links">
+      <a href="index.html" class="active">home</a>
+      <a href="projects.html">projects</a>
+      <a href="research.html">research</a>
+      <a href="about.html">about</a>
+      <a href="contact.html">contact</a>
+      <a href="resume.pdf">resume ↗</a>
+    </div>
+  </nav>
+</header>
+
+<main class="wrap">
+
+  <!-- ============================= HERO ============================= -->
+  <section class="hero">
+    <div class="hero-cols">
+      <div>
+        <span class="kicker">Electrical Engineer · GaN Power Electronics · Embedded</span>
+        <h1>I design boards that <span class="hl">switch at 100&nbsp;V/ns</span> and the firmware that keeps them honest.<span class="cursor">_</span></h1>
+        <p class="lead">
+          Applications engineering at Infineon, GaN device research at Waterloo, and a
+          bench full of PCBs I designed from schematic to bring-up. I work where the
+          device physics, the layout and the control loop all have to agree.
+        </p>
+        <div class="btn-row">
+          <a class="btn primary" href="projects.html">View projects →</a>
+          <a class="btn" href="contact.html">Get in touch</a>
+        </div>
+      </div>
+      <figure class="hero-figure">
+        <img src="images/mmwave-v11.jpg" alt="3D render of the mmWave WiFi sensor module, revision 1.1">
+      </figure>
+    </div>
+  </section>
+
+  <!-- ============================= SPEC STRIP ============================= -->
+  <section class="tight">
+    <div class="spec-strip">
+      <div class="spec"><div class="k">Focus</div><div class="v">GaN Power Electronics</div></div>
+      <div class="spec"><div class="k">Boards designed</div><div class="v">6+</div></div>
+      <div class="spec"><div class="k">Characterized</div><div class="v">&minus;50 to 150 °C</div></div>
+      <div class="spec"><div class="k">First author</div><div class="v">CSSTC 2026</div></div>
+    </div>
+  </section>
+
+  <!-- ============================= FEATURED ============================= -->
+  <section>
+    <div class="section-head">
+      <span class="idx">01</span>
+      <h2>Selected work</h2>
+      <span class="rule"></span>
+      <a class="mono" style="font-size:0.8rem" href="projects.html">all projects →</a>
+    </div>
+
+    <div class="grid">
+
+      <article class="card">
+        <div class="card-media"><img src="images/gan-board-front.jpg" alt="900 V GaN BDS control daughter card"></div>
+        <div class="card-top">
+          <span class="status">Active</span>
+          <span>2026</span>
+        </div>
+        <h3><a class="stretch" href="project-gan-platform.html">Universal ZVS / Characterization Platform</a></h3>
+        <p>
+          dsPIC control daughter card and Python GUI for a 900&nbsp;V GaN bidirectional
+          switch. AC-ZVS with polarity detection, dynamic R<sub>DS(on)</sub> pulsing, and
+          CRC-protected RS-485 that survives the EMI.
+        </p>
+        <div class="card-foot">
+          <div class="tags">
+            <span class="tag">C</span><span class="tag">dsPIC33</span>
+            <span class="tag">RS-485</span><span class="tag">Python</span><span class="tag">GaN</span>
+          </div>
+        </div>
+      </article>
+
+      <article class="card">
+        <div class="card-media"><img src="images/mmwave-v11-antenna.jpg" alt="mmWave sensor module PCB layout showing antenna keep-out"></div>
+        <div class="card-top">
+          <span class="status">v1.1 built</span>
+          <span>2026</span>
+        </div>
+        <h3><a class="stretch" href="project-mmwave.html">Room Watchdog — mmWave Sensor Module</a></h3>
+        <p>
+          ESP32-S3 presence sensor pairing an LD2410 24&nbsp;GHz radar with a PIR
+          watchdog — so the power-hungry radar only wakes when something moves.
+          Two revisions, USB-C, ESD-protected.
+        </p>
+        <div class="card-foot">
+          <div class="tags">
+            <span class="tag">ESP32-S3</span><span class="tag">LD2410 24 GHz</span>
+            <span class="tag">PIR</span><span class="tag">USB-C</span>
+          </div>
+        </div>
+      </article>
+
+      <article class="card">
+        <div class="card-media"><img src="images/battery-block.jpg" alt="Battery pack system block diagram"></div>
+        <div class="card-top">
+          <span class="status wip">In progress</span>
+          <span>2026</span>
+        </div>
+        <h3><a class="stretch" href="project-battery.html">5000 mAh USB-C PD Battery Pack</a></h3>
+        <p>
+          40&nbsp;W fast charging with load-adaptive conversion, ultra-low quiescent
+          current, and over-current / over-temperature protection around a Li-ion
+          cell stack.
+        </p>
+        <div class="card-foot">
+          <div class="tags">
+            <span class="tag">USB-C PD</span><span class="tag">BMS</span>
+            <span class="tag">Buck/Boost</span><span class="tag">Li-ion</span>
+          </div>
+        </div>
+      </article>
+
+    </div>
+  </section>
+
+  <!-- ============================= CAPABILITIES ============================= -->
+  <section>
+    <div class="section-head">
+      <span class="idx">02</span>
+      <h2>What I work with</h2>
+      <span class="rule"></span>
+    </div>
+
+    <div class="cols">
+      <div>
+        <div class="skill-group">
+          <h4>Power electronics</h4>
+          <div class="tags">
+            <span class="tag">GaN (BDS · e-HEMT · IPS)</span><span class="tag">ZVS / soft switching</span>
+            <span class="tag">Buck · boost · SSW</span><span class="tag">Gate drive</span>
+            <span class="tag">Dynamic R<sub>DS(on)</sub></span><span class="tag">Slew-rate control</span>
+            <span class="tag">EMI &amp; parasitics</span>
+          </div>
+        </div>
+        <div class="skill-group">
+          <h4>Firmware &amp; embedded</h4>
+          <div class="tags">
+            <span class="tag">C / C++</span><span class="tag">dsPIC33</span><span class="tag">PIC18</span>
+            <span class="tag">STM32</span><span class="tag">ESP32-S3</span>
+            <span class="tag">Assembly</span><span class="tag">VHDL</span>
+            <span class="tag">UART · CAN · RS-485</span><span class="tag">PWM &amp; dead-time</span>
+            <span class="tag">Flash / FTL internals</span>
+          </div>
+        </div>
+        <div class="skill-group">
+          <h4>Design &amp; simulation</h4>
+          <div class="tags">
+            <span class="tag">KiCad</span><span class="tag">Altium</span>
+            <span class="tag">SPICE / PSPICE</span><span class="tag">PLECS</span>
+            <span class="tag">Keysight IC-CAP</span><span class="tag">TCAD</span>
+            <span class="tag">Verilog-A</span><span class="tag">MATLAB</span><span class="tag">Python</span>
+          </div>
+        </div>
+        <div class="skill-group">
+          <h4>Lab &amp; characterization</h4>
+          <div class="tags">
+            <span class="tag">DPT · ZVS · continuous</span><span class="tag">400 V supplies</span>
+            <span class="tag">8 kW boost converters</span><span class="tag">−50 to 150 °C</span>
+            <span class="tag">Wafer-level probing</span><span class="tag">SEM &amp; cross-section</span>
+            <span class="tag">Differential probes</span><span class="tag">Board bring-up</span>
+          </div>
+        </div>
+      </div>
+
+      <aside class="panel">
+        <h3 style="margin-top:0">Currently</h3>
+        <table class="spec-table">
+          <tr><td>Role</td><td>Product Applications Engineering Intern</td></tr>
+          <tr><td>Org</td><td>Infineon Technologies, Ottawa</td></tr>
+          <tr><td>Building</td><td>GaN BDS characterization platform</td></tr>
+          <tr><td>Also building</td><td>5000 mAh USB-C PD pack</td></tr>
+          <tr><td>Studying</td><td>B.Eng EE Co-op, Waterloo — 3.95</td></tr>
+          <tr><td>Open to</td><td>Power electronics / embedded roles</td></tr>
+        </table>
+        <div class="btn-row" style="margin-top:20px">
+          <a class="btn" href="about.html">More about me →</a>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <span>© 2026 Ella Lewis</span>
+    <span>
+      <a href="mailto:elcslewis@gmail.com">email</a> ·
+      <a href="https://github.com/ecslewis">github</a> ·
+      <a href="https://www.linkedin.com/in/elcslewis/">linkedin</a>
+    </span>
+  </div>
+</footer>
+
+<script src="scroll.js" defer></script>
+
+</body>
+</html>

@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NAND Flash Simulator &amp; FTL — Ella Lewis</title>
+<meta name="description" content="A dependency-free C11 NAND flash simulator with a flash translation layer — garbage collection, wear levelling and write amplification.">
+<link rel="stylesheet" href="style.css">
+<noscript><style>
+  /* JavaScript off: show everything immediately, no animation */
+  .reveal{opacity:1!important;transform:none!important;filter:none!important}
+  .spec-strip .spec{opacity:1!important;transform:none!important}
+  .section-head .rule{transform:scaleX(1)!important}
+  .timeline .tl-item::before{transform:scale(1)!important}
+</style></noscript>
+</head>
+<body>
+
+<header class="site-header">
+  <nav class="nav">
+    <a class="brand" href="index.html">ella_lewis<span class="dot">.</span>eng</a>
+    <div class="nav-links">
+      <a href="index.html">home</a>
+      <a href="projects.html" class="active">projects</a>
+      <a href="research.html">research</a>
+      <a href="about.html">about</a>
+      <a href="contact.html">contact</a>
+      <a href="resume.pdf">resume ↗</a>
+    </div>
+  </nav>
+</header>
+
+<main class="wrap">
+
+  <section class="hero" style="padding-bottom:24px">
+    <a class="back" href="projects.html">← back to projects</a>
+    <span class="kicker">Systems Software · Embedded C</span>
+    <h1 style="font-size:clamp(1.8rem,4vw,2.7rem)">NAND Flash Simulator &amp; Translation Layer</h1>
+    <p class="lead">
+      A dependency-free C11 model of NAND flash at the block and page level, enforcing the
+      physical rules that make NAND awkward — then a flash translation layer on top of it
+      with out-of-place updates, garbage collection and wear levelling, so you can watch
+      write amplification happen.
+    </p>
+  </section>
+
+  <section class="tight">
+    <div class="spec-strip">
+      <div class="spec"><div class="k">Language</div><div class="v">C11</div></div>
+      <div class="spec"><div class="k">Dependencies</div><div class="v">0</div></div>
+      <div class="spec"><div class="k">Lines</div><div class="v">1551</div></div>
+      <div class="spec"><div class="k">Warnings</div><div class="v">0</div></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="cols">
+      <div>
+
+        <div class="section-head">
+          <span class="idx">01</span><h2>Why NAND is strange</h2><span class="rule"></span>
+        </div>
+        <p>
+          NAND flash is not a file and it is not RAM, and the difference is not a detail —
+          it is why SSDs need a translation layer at all. Three physical rules drive
+          everything, and the simulator enforces all three:
+        </p>
+        <table class="spec-table">
+          <tr><td>Erase granularity</td><td>You erase a whole <em>block</em>, never a page. Erase sets every byte to 0xFF</td></tr>
+          <tr><td>Programming direction</td><td>Programming only flips bits 1 → 0. A page must be freshly erased before it can be written</td></tr>
+          <tr><td>Sequential ordering</td><td>Pages must be programmed in order within a block — 0, then 1, then 2</td></tr>
+        </table>
+        <p>
+          Reading is unrestricted. That asymmetry is the whole problem: you can read anywhere
+          at any time, but you cannot modify anything smaller than a block, and modifying a
+          block means erasing it. Update one page in place and you have to erase and rewrite
+          everything around it.
+        </p>
+
+        <div class="terminal">
+          <div class="bar">the rule, enforced</div>
+<pre>&gt; <span class="c">program 1 0 test data here</span>
+Programmed block 1 page 0.
+
+&gt; <span class="c">read 1 0</span>
+Block 1 page 0: "test data here"
+
+&gt; <span class="c">program 1 0 overwrite</span>
+<span class="w">Error: programPage: block 1 page 0 is already programmed -- erase the
+block before rewriting it (NAND can only flip bits 1-&gt;0; it cannot be
+reprogrammed in place)</span></pre>
+        </div>
+
+        <div class="section-head" style="margin-top:48px">
+          <span class="idx">02</span><h2>The simulator</h2><span class="rule"></span>
+        </div>
+        <p>
+          <code>nand_flash.c</code> models geometry as blocks → pages → bytes with
+          three-level pointer indirection (<code>storage[block][page][byte]</code>), tracking
+          per-page state and per-block erase counts. Geometry is configurable at creation —
+          the default 4 × 4 × 32 is small enough to inspect by hand; <code>nand_create(128,
+          64, 2048)</code> gives something closer to a real part.
+        </p>
+        <p>
+          Errors come back as <code>NandStatus</code> codes with a companion
+          <code>nand_last_error()</code> string, rather than exceptions — the conventional C
+          idiom, and it keeps the failure modes explicit at every call site. The interesting
+          statuses are the ones that encode the physics:
+          <code>NAND_ERR_ALREADY_PROGRAMMED</code> and <code>NAND_ERR_OUT_OF_ORDER</code>.
+        </p>
+
+        <div class="section-head" style="margin-top:48px">
+          <span class="idx">03</span><h2>The translation layer</h2><span class="rule"></span>
+        </div>
+        <p>
+          The FTL is where it gets interesting. It exposes a flat logical page interface —
+          <code>write(lpn)</code>, <code>read(lpn)</code>, <code>trim(lpn)</code> — and hides
+          the fact that the medium underneath cannot be overwritten. Four mechanisms make
+          that work:
+        </p>
+        <table class="spec-table">
+          <tr><td>L2P mapping</td><td>Logical-to-physical table; a logical page can live anywhere</td></tr>
+          <tr><td>Out-of-place update</td><td>Rewriting a logical page writes to a fresh physical page and marks the old one stale</td></tr>
+          <tr><td>Garbage collection</td><td>When free blocks run out, the block with the most stale pages is picked as victim; surviving valid pages are relocated, then the victim is erased</td></tr>
+          <tr><td>Wear levelling</td><td>New active blocks are taken as the least-erased block in the free pool, spreading erases out</td></tr>
+        </table>
+        <p>
+          Stale pages are the cost of out-of-place updates, and garbage collection is the
+          bill. Every valid page GC has to relocate is a physical write the host never asked
+          for — which is exactly what write amplification measures.
+        </p>
+
+        <div class="section-head" style="margin-top:48px">
+          <span class="idx">04</span><h2>Watching write amplification appear</h2><span class="rule"></span>
+        </div>
+        <p>
+          The demo makes the mechanism visible. Five sequential writes into a clean device
+          cost exactly five physical writes — nothing wasted:
+        </p>
+
+        <div class="terminal">
+          <div class="bar">after 5 sequential writes</div>
+<pre>Logical pages: 48   Physical pages: 64 (blocks=8 x pages/block=8)
+Free blocks: 7   Active block: 0 (next page 5/8)
+GC runs: 0   Pages relocated: 0
+Host writes: 5   Physical writes: 5   <span class="hl">Write amplification: 1.00x</span>
+
+Block   Erases    Valid     Stale     Pages (F=free V=valid S=stale)
+----------------------------------------------------------------------
+0       0         5         0         <span class="g">VVVVV</span><span class="d">FFF</span>
+1       0         0         0         <span class="d">FFFFFFFF</span></pre>
+        </div>
+
+        <p>
+          Rewriting one logical page five times leaves the old copies behind as garbage —
+          note block 0 filling with <span class="mono" style="color:var(--accent-warn)">S</span>
+          while the live data migrates to block 7:
+        </p>
+
+        <div class="terminal">
+          <div class="bar">after rewriting lpn 0 five times</div>
+<pre>Free blocks: 6   Active block: 7 (next page 2/8)
+Host writes: 10   Physical writes: 10   <span class="hl">Write amplification: 1.00x</span>
+
+Block   Erases    Valid     Stale     Pages
+----------------------------------------------------------------------
+0       0         4         4         <span class="w">S</span><span class="g">VVVV</span><span class="w">SSS</span>
+7       0         1         1         <span class="w">S</span><span class="g">V</span><span class="d">FFFFFF</span></pre>
+        </div>
+
+        <p>
+          Then garbage collection runs. Block 0 is the victim — most stale pages — so its
+          three surviving valid pages are relocated into the active block and block 0 is
+          erased and returned to the pool. Those three relocations are pure overhead, and
+          the amplification figure moves for the first time:
+        </p>
+
+        <div class="terminal">
+          <div class="bar">after one forced GC pass</div>
+<pre>Free blocks: 7   Active block: 7 (next page 5/8)
+<span class="hl">GC runs: 1   Pages relocated: 3</span>
+Host writes: 10   Physical writes: 13   <span class="hl">Write amplification: 1.30x</span>
+
+Block   Erases    Valid     Stale     Pages
+----------------------------------------------------------------------
+0       <span class="hl">1</span>         0         0         <span class="d">FFFFFFFF</span>
+7       0         4         1         <span class="w">S</span><span class="g">VVVV</span><span class="d">FFF</span></pre>
+        </div>
+
+        <p>
+          Ten host writes became thirteen physical writes, and block 0's erase counter went
+          to 1. That is the entire reason SSDs wear out, reproduced in about fifteen lines of
+          output.
+        </p>
+
+        <div class="section-head" style="margin-top:48px">
+          <span class="idx">05</span><h2>Where it falls over</h2><span class="rule"></span>
+        </div>
+        <p>
+          I ran a heavier workload against it — 300 random rewrites scattered across all 48
+          logical pages — to see how it behaved under sustained pressure. It stopped accepting
+          writes after 69:
+        </p>
+
+        <div class="terminal">
+          <div class="bar">300 random rewrites, seed 7</div>
+<pre><span class="w">Error: garbage collection: ran out of free blocks mid-relocation
+(device is essentially full)</span>
+
+Free blocks: 0   Active block: none
+GC runs: 1   Pages relocated: 3
+Host writes: 69   Physical writes: 72   Write amplification: 1.04x
+
+Block   Erases    Valid     Stale     Pages
+----------------------------------------------------------------------
+0       1         8         0         <span class="g">VVVVVVVV</span>
+4       0         3         5         <span class="w">SSSSS</span><span class="g">VVV</span>
+5       0         2         6         <span class="g">V</span><span class="w">S</span><span class="g">V</span><span class="w">SSSS</span><span class="w">S</span>
+6       0         1         7         <span class="g">V</span><span class="w">SSSSSSS</span>
+7       0         2         6         <span class="w">S</span><span class="g">V</span><span class="w">SSS</span><span class="g">V</span><span class="w">SS</span></pre>
+        </div>
+
+        <figure>
+          <span class="shot"><img src="images/nand-blockmap.svg" alt="Block map showing valid, stale and free pages across eight blocks after the stress run"></span>
+          <figcaption>The same state as a block map — plenty of reclaimable garbage, nowhere to put the survivors.</figcaption>
+        </figure>
+
+        <p>
+          The interesting part is that this is not a device that ran out of <em>space</em>.
+          Blocks 4 through 7 are five to seven eighths stale — there is a lot of garbage to
+          reclaim. The problem is that garbage collection needs somewhere to relocate the
+          surviving valid pages <em>to</em>, and with the free pool empty and no active block,
+          it has nowhere. GC needs free space in order to create free space.
+        </p>
+        <p class="note">
+          The standard fix is to hold one block back exclusively for GC, so a reclaim pass can
+          always complete. With 48 logical pages against 64 physical, over-provisioning is
+          only two blocks, and both get consumed by host writes before GC needs them. Worth
+          checking whether raising the reserve in <code>ftl_recommended_logical_pages()</code>
+          pushes the failure out or just delays it.
+        </p>
+
+        <div class="section-head" style="margin-top:48px">
+          <span class="idx">06</span><h2>Build &amp; correctness</h2><span class="rule"></span>
+        </div>
+        <p>
+          Compiles clean under <code>-Wall -Wextra</code> with no warnings, and clean under
+          AddressSanitizer and UBSan with no leaks or undefined behaviour reported — which
+          matters given the manual three-level allocation. Both are Makefile targets.
+        </p>
+
+        <div class="terminal">
+          <div class="bar">build</div>
+<pre><span class="c">$ gcc -std=c11 -Wall -Wextra -O2 -o ftl_sim ftlmain.c ftl.c nand_flash.c</span>
+<span class="d">(no output)</span>
+
+<span class="c">$ make asan &amp;&amp; ./ftl_sim</span>
+<span class="g">clean — no leaks, no UB reported</span></pre>
+        </div>
+
+        <p class="note">
+          One thing to fix: the Makefile lists <code>ftl_main.c</code> in
+          <code>FTL_SRCS</code>, but the file is named <code>ftlmain.c</code>. Plain
+          <code>make</code> builds <code>nand_sim</code> and then fails with
+          <em>“No rule to make target 'ftl_main.o'”</em>. One character.
+        </p>
+
+        <div class="section-head" style="margin-top:48px">
+          <span class="idx">07</span><h2>Next</h2><span class="rule"></span>
+        </div>
+        <table class="spec-table">
+          <tr><td>Reserved GC block</td><td>Guarantee a reclaim pass can always complete</td></tr>
+          <tr><td>Bad block management</td><td>Retire blocks past an erase threshold and skip them</td></tr>
+          <tr><td>Bit-level programming</td><td>Allow rewrite where <code>old &amp; new == new</code> — the literal NAND rule</td></tr>
+          <tr><td>ECC simulation</td><td>Random bit flips modelling charge leakage, with Hamming correction on read</td></tr>
+          <tr><td>Cost-benefit GC</td><td>Weight victim selection by block age, not just stale count</td></tr>
+        </table>
+
+      </div>
+
+      <aside>
+        <div class="panel" style="margin-bottom:20px">
+          <h3 style="margin-top:0">At a glance</h3>
+          <table class="spec-table">
+            <tr><td>Role</td><td>Everything</td></tr>
+            <tr><td>Language</td><td>C11, no dependencies</td></tr>
+            <tr><td>Source</td><td>1551 lines across 6 files</td></tr>
+            <tr><td>Build</td><td>gcc + make</td></tr>
+            <tr><td>Checked with</td><td>-Wall -Wextra, ASan, UBSan</td></tr>
+            <tr><td>Interfaces</td><td>Scripted demo + interactive CLI</td></tr>
+          </table>
+          <div class="btn-row" style="margin-top:20px">
+            <a class="btn primary" href="nand-flash-simulator.zip">Download source ↗</a>
+          </div>
+        </div>
+
+        <div class="panel" style="margin-bottom:20px">
+          <h3 style="margin-top:0">Files</h3>
+          <table class="spec-table">
+            <tr><td>nand_flash.c/h</td><td>Geometry, erase, program, read</td></tr>
+            <tr><td>ftl.c/h</td><td>L2P mapping, GC, wear levelling</td></tr>
+            <tr><td>main.c</td><td>NAND demo + CLI</td></tr>
+            <tr><td>ftlmain.c</td><td>FTL demo + CLI</td></tr>
+          </table>
+        </div>
+
+        <div class="panel">
+          <h3 style="margin-top:0">Why build this</h3>
+          <p style="font-size:0.88rem;margin:0">
+            Built for fun, to understand the rules that make NAND different from RAM
+            or a regular file — and why every SSD needs a translation layer hiding
+            them.
+          </p>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <span>© 2026 Ella Lewis</span>
+    <span>
+      <a href="mailto:elcslewis@gmail.com">email</a> ·
+      <a href="https://github.com/ecslewis">github</a> ·
+      <a href="https://www.linkedin.com/in/elcslewis/">linkedin</a>
+    </span>
+  </div>
+</footer>
+
+<script src="scroll.js" defer></script>
+
+</body>
+</html>

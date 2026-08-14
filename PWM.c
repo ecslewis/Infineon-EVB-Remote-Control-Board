@@ -12,6 +12,74 @@
 /* One PWM count = 1 / (FPWM * 8) = 1 / 943.36 MHz = 1.060 ns  (high-res on). */
 #define NS_CNT(ns) ((uint16_t)(((uint32_t)(ns) * 100UL) / 106UL))
 
+/* ====================================================================== *
+ * AC-ZVS ramp parameters - ONE definition of the start frequency.
+ *
+ * These were three different numbers before:
+ *   PWM_Mode()             hardcoded 500000UL  -> PTPER 1872
+ *   ZC_WAIT_DT2_ON         hardcoded PTPER 1879
+ *   PWMx_StartRampDown()   hardcoded 400000UL
+ * so the generator, the "restart" write and the ramp's idea of where it
+ * was starting from all disagreed.  The first ramp step therefore jumped
+ * 500 kHz -> 392 kHz in one go.
+ * ====================================================================== */
+#define ACZVS_START_FREQ 500000UL /* frequency the ramp starts at   */
+#define RAMP_STEP_HZ 8000UL       /* frequency decrement per tick   */
+#define RAMP_TICK_US 20UL         /* time between ramp steps        */
+
+/* High-resolution period, in 1/(8*FPWM) = 1.06 ns counts.
+ *
+ * The old expression, (uint16_t)((FPWM / freq) - 1) * 8, truncated
+ * FPWM/freq to an integer BEFORE multiplying by 8, which quantises the
+ * achievable period to 8-count steps and leaves a systematic ~0.7 % error
+ * (500 kHz asked for -> 503.7 kHz produced).  It also overflows: the cast
+ * to uint16_t promotes to a 16-bit int on XC16, so the *8 wraps for any
+ * frequency below ~14.4 kHz. */
+static inline uint16_t hr_period(uint32_t freq)
+{
+    uint32_t p;
+
+    if (freq == 0UL)
+        freq = ACZVS_START_FREQ;
+
+    p = (8UL * FPWM) / freq;
+
+    if (p < 16UL)
+        p = 16UL;
+    if (p > 0xFFF8UL) /* PTPER is 16-bit -> ~14.4 kHz floor */
+        p = 0xFFF8UL;
+
+    return (uint16_t)(p - 1UL);
+}
+
+static inline uint16_t hr_duty(uint16_t period, uint8_t duty)
+{
+    return (uint16_t)(((uint32_t)period * (uint32_t)duty) / 100UL);
+}
+
+/* ---------------------------------------------------------------------- *
+ * Single-store override control for PWM1 / PWM2.
+ *
+ * IOCONx<9> = OVRENH, <8> = OVRENL, <7:6> = OVRDAT<1:0>.
+ *
+ * Exactly the reason spelled out for the clamp further down this file: two
+ * separate IOCONxbits.OVRENx assignments are two BSET/BCLR instructions, so
+ * for one instruction cycle (25.2 ns) one half of a complementary pair is
+ * overridden while the other is still module-driven.  The dead-time block
+ * sees a transition it did not generate and emits a runt a few counts wide.
+ * That fix was applied to PWM3 only - PWM1 and PWM2 were still doing it in
+ * every kill/release path, which is where the random "false turn-on /
+ * false turn-off" during the ramp comes from.
+ * ---------------------------------------------------------------------- */
+#define OVR_EN_MASK 0x0300u
+#define OVR_DAT_MASK 0x00C0u
+
+#define OVR_ASSERT(io, dat)                                                 \
+    ((io) = (uint16_t)(((io) & (uint16_t)(~(OVR_EN_MASK | OVR_DAT_MASK))) | \
+                       ((uint16_t)(dat) << 6) | OVR_EN_MASK))
+
+#define OVR_RELEASE(io) ((io) = (uint16_t)((io) & (uint16_t)(~OVR_EN_MASK)))
+
 #define CLAMP_DT_NS 100                  /* gap between every clamp edge   */
 #define CLAMP_DT_CNT NS_CNT(CLAMP_DT_NS) /* = 94 counts = 99.6 ns         */
 
@@ -39,11 +107,11 @@
 #define CLAMP_PINS_TO_GPIO() (IOCON3 &= (uint16_t)(~CLAMP_PEN_MASK))
 
 /* Idle levels while the GPIO module owns the pads.  RB11 = GH, RB12 = GL. */
-#define CLAMP_GPIO_IDLE()                                                      \
-    do                                                                         \
-    {                                                                          \
-        LATBbits.LATB11 = 0; /* GH low  */                                     \
-        LATBbits.LATB12 = 1; /* GL high */                                     \
+#define CLAMP_GPIO_IDLE()                  \
+    do                                     \
+    {                                      \
+        LATBbits.LATB11 = 0; /* GH low  */ \
+        LATBbits.LATB12 = 1; /* GL high */ \
     } while (0)
 
 /* SUPERSEDED - kept only to explain why the override is no longer used:
@@ -79,16 +147,16 @@
  * a transition it did not generate and emits a pulse a few counts wide on GH.
  * That is the ~10 ns blip: it lands on these writes, which sit ~4-6
  * instructions ahead of the LATB3 clear at the end of case 2. */
-#define CLAMP_OVREN_MASK  0x0300u
+#define CLAMP_OVREN_MASK 0x0300u
 #define CLAMP_OVRDAT_MASK 0x00C0u
 
-#define CLAMP_OVR_RELEASE()                                                    \
+#define CLAMP_OVR_RELEASE() \
     (IOCON3 &= (uint16_t)(~CLAMP_OVREN_MASK))
 
-#define CLAMP_OVR_ASSERT()                                                     \
-    (IOCON3 = (uint16_t)((IOCON3 & (uint16_t)(~(CLAMP_OVRDAT_MASK |            \
-                                                CLAMP_OVREN_MASK))) |         \
-                         ((uint16_t)(CLAMP_IDLE_OVRDAT) << 6) |               \
+#define CLAMP_OVR_ASSERT()                                            \
+    (IOCON3 = (uint16_t)((IOCON3 & (uint16_t)(~(CLAMP_OVRDAT_MASK |   \
+                                                CLAMP_OVREN_MASK))) | \
+                         ((uint16_t)(CLAMP_IDLE_OVRDAT) << 6) |       \
                          CLAMP_OVREN_MASK))
 
 /* Special event trigger offset from the period start, in PWM counts.  The
@@ -113,8 +181,10 @@
  * the PDC3 latching and the OSYNC'd override handoff.  Ask for the ITB = 1
  * variant instead. */
 
-extern volatile uint32_t new_freq = DEFAULT_FREQ;
-extern volatile uint8_t new_duty = DEFAULT_DUTY;
+/* Definitions, not declarations - "extern" with an initialiser is a
+ * definition anyway, but it reads as a mistake and some tool-chains warn. */
+volatile uint32_t new_freq = DEFAULT_FREQ;
+volatile uint8_t new_duty = DEFAULT_DUTY;
 volatile uint8_t pwm_update_pending = 0;
 volatile uint8_t freq_update_pending = 0;
 volatile uint8_t pwm_mode2_pending = 0;
@@ -136,8 +206,13 @@ static uint16_t rd_phase3, rd_pdc3;
 volatile uint8_t pwm_ramp_active = 0;
 volatile uint8_t pwm_ramp_channel = 0; // 1 = PWM1, 2 = PWM2
 volatile uint32_t pwm_ramp_target_freq = DEFAULT_FREQ;
-volatile uint32_t pwm_ramp_current_freq = 500000UL;
+volatile uint32_t pwm_ramp_current_freq = ACZVS_START_FREQ;
 volatile uint8_t pwm_ramp_duty = DEFAULT_DUTY;
+
+/* Period/duty the AC-ZVS half-cycle must start at.  Computed once in
+ * PWM_Mode() so the T3 handler cannot disagree with the generator. */
+static uint16_t aczvs_start_per = 0;
+static uint16_t aczvs_start_dty = 0;
 // globals
 static uint32_t current_freq = DEFAULT_FREQ;
 static uint8_t current_duty = DEFAULT_DUTY;
@@ -147,6 +222,17 @@ _PWMSpEventMatchInterrupt(void)
 {
     IFS3bits.PSEMIF = 0;
     static uint8_t rdson_state = 0;
+
+    /* The Rd(on) clamp belongs to DC-ZVS only.  PWM_Mode() used to enable
+     * this interrupt as well, so in AC-ZVS it fired every PWM period (every
+     * 2 us at 500 kHz) to do nothing - pure latency added to the T2/T3
+     * handlers that actually matter - and a stray 0x10 command would have
+     * let it rewrite PTPER / PDC1 / MDC in the middle of a half-cycle. */
+    if (ac_zvs)
+    {
+        rdson_state = 0;
+        return;
+    }
 
     switch (rdson_state)
     {
@@ -372,7 +458,17 @@ void INT1_Init(void)
     INTCON2bits.INT1EP = 0; // 0 = rising edge [1]
 
     IFS1bits.INT1IF = 0; // Clear flag
-    IPC5bits.INT1IP = 7; // Priority 6
+    /* Priority 6, the SAME as T2 and T3 - was 7.
+     *
+     * INT1, _T2Interrupt and _T3Interrupt all read-modify-write IOCONx and
+     * the PWM period/duty registers.  At priority 7 INT1 could preempt a
+     * timer handler in the middle of one of those read-modify-writes, and
+     * the timer's pending store would then clobber the override INT1 had
+     * just asserted - outputs live across a zero crossing.  Equal priorities
+     * cannot preempt each other on this core, so the three handlers are now
+     * mutually exclusive.  Cost: the zero-crossing response is delayed by at
+     * most one timer ISR (a couple of us) against a 310 us dead time. */
+    IPC5bits.INT1IP = 6;
     IEC1bits.INT1IE = 1; // Enable
 }
 static void Timer3_LoadAndStart_10ms(void)
@@ -437,24 +533,50 @@ static void Timer3_LoadAndStart_330us(void)
     IEC0bits.T3IE = 1;
     T3CONbits.TON = 1;
 }
+/* BUG: this was PR2 = 2 with TCKPS = 0b00 (1:1).
+ *
+ *   2 counts @ 39.61375 MHz = 50 ns, NOT 20 us.
+ *
+ * The ramp ISR was therefore re-entered as fast as it could return - the
+ * whole 500 kHz -> target ramp finished in roughly 100 us instead of
+ * ~1 ms, and PTPER/PDCx were being rewritten several times inside a single
+ * PWM period.  Combined with IUE = 1 (immediate duty update, see the T2
+ * ISR) that is exactly how you lose a compare and get a merged or missing
+ * pulse at random.  PR2 = 2 was presumably written for TCKPS = 0b11
+ * (1:256), which does give ~19.4 us. */
+#define RAMP_PR2 ((uint16_t)((((FCY / 1000UL) * RAMP_TICK_US) / 1000UL) - 1UL))
+
 static void Timer2_LoadAndStart_20us(void)
 {
     T2CONbits.TON = 0;
     T2CONbits.TCS = 0;
     T2CONbits.TGATE = 0;
-    T2CONbits.TCKPS = 0b00;
+    T2CONbits.TCKPS = 0b00; /* 1:1 */
     TMR2 = 0;
-    PR2 = 2U; // 20 us @ FCY 39.61375 MHz
+    PR2 = RAMP_PR2; /* 791 -> 792 Tcy = 19.99 us @ FCY 39.61375 MHz */
     IFS0bits.T2IF = 0;
     IPC1bits.T2IP = 6;
     IEC0bits.T2IE = 1;
     T2CONbits.TON = 1;
 }
+
+/* Stop a ramp dead.  Called from INT1 so a ramp still in flight can never
+ * keep writing PTPER/PDCx into the next half-cycle's setup sequence. */
+static void Ramp_Abort(void)
+{
+    T2CONbits.TON = 0;
+    IEC0bits.T2IE = 0;
+    IFS0bits.T2IF = 0;
+    pwm_ramp_active = 0;
+}
+/* pwm_ramp_current_freq now starts where the hardware actually is
+ * (ACZVS_START_FREQ), not at 400 kHz.  The old value made the very first
+ * ramp step a 500 -> 392 kHz jump. */
 void PWM1_StartRampDown(uint32_t target_freq, uint8_t duty)
 {
     pwm_ramp_channel = 1;
     pwm_ramp_target_freq = target_freq;
-    pwm_ramp_current_freq = 400000UL;
+    pwm_ramp_current_freq = ACZVS_START_FREQ;
     pwm_ramp_duty = duty;
     pwm_ramp_active = 1;
     Timer2_LoadAndStart_20us();
@@ -464,7 +586,7 @@ void PWM2_StartRampDown(uint32_t target_freq, uint8_t duty)
 {
     pwm_ramp_channel = 2;
     pwm_ramp_target_freq = target_freq;
-    pwm_ramp_current_freq = 400000UL;
+    pwm_ramp_current_freq = ACZVS_START_FREQ;
     pwm_ramp_duty = duty;
     pwm_ramp_active = 1;
     Timer2_LoadAndStart_20us();
@@ -476,25 +598,36 @@ void __attribute__((interrupt, no_auto_psv)) _INT1Interrupt(void)
         return;
     uint8_t edge = PORTBbits.RB0; // Read pin state
 
+    // Stop any running timer from the previous cycle
+    T3CONbits.TON = 0;
+    IEC0bits.T3IE = 0;
+
+    /* Kill the ramp too.  INT1 stopped T3 but left Timer2 running, so a ramp
+     * that had not finished kept stepping PTPER/PDC1 straight through the
+     * 310 us dead window and into the next half-cycle's setup.  With PR2
+     * broken the ramp always finished in ~100 us and hid this; with PR2
+     * fixed the ramp lasts ~1 ms and it would bite. */
+    Ramp_Abort();
+
+    /* Both halves of each pair are forced low in ONE store - see OVR_ASSERT.
+     * Note the override is asserted BEFORE PMOD is touched: changing PMOD
+     * while the pins are still module-driven opens a window in which the
+     * complementary/dead-time enforcement is not in effect. */
+    OVR_ASSERT(IOCON1, 0b00);
+    OVR_ASSERT(IOCON2, 0b00);
+    IOCON1bits.PMOD = 0b11;
+    IOCON2bits.PMOD = 0b11;
+    IOCON1bits.PENH = 1;
+    IOCON1bits.PENL = 1;
+    IOCON2bits.PENH = 1;
+    IOCON2bits.PENL = 1;
+
     if (edge == 1)
     {
         // Rising edge = positive half cycle
         LATBbits.LATB3 = 1; // LED ON
 
-        // Stop any running timer from previous cycle
-        T3CONbits.TON = 0;
-        IEC0bits.T3IE = 0;
-
-        // KILL PWM1
-        IOCON1bits.OVRDAT = 0b00;
-        IOCON1bits.OVRENH = 1;
-        IOCON1bits.OVRENL = 1;
-        // Kill PWM2 outputs before doing anything
-        IOCON2bits.OVRDAT = 0b00; // Both LOW [1]
-        IOCON2bits.OVRENH = 1;    // Override ON [1]
-        IOCON2bits.OVRENL = 1;    // Override ON [1]
-
-        // Start 200us delay before turning PWM2 ON
+        // Start delay before turning PWM2 ON
         zc_state = ZC_WAIT_DT1_ON;
         Timer3_LoadAndStart_310us();
     }
@@ -503,27 +636,7 @@ void __attribute__((interrupt, no_auto_psv)) _INT1Interrupt(void)
         // Falling edge = negative half cycle
         LATBbits.LATB3 = 0;
 
-        // Stop timer
-        T3CONbits.TON = 0;
-        IEC0bits.T3IE = 0;
-
-        // Kill PWM1 immediately
-        IOCON1bits.PMOD = 0b11;
-        IOCON1bits.PENH = 1;
-        IOCON1bits.PENL = 1;
-        IOCON1bits.OVRDAT = 0b00;
-        IOCON1bits.OVRENH = 1;
-        IOCON1bits.OVRENL = 1;
-
-        // Kill PWM2 immediately
-        IOCON2bits.PMOD = 0b11;
-        IOCON2bits.PENH = 1;
-        IOCON2bits.PENL = 1;
-        IOCON2bits.OVRDAT = 0b00;
-        IOCON2bits.OVRENH = 1;
-        IOCON2bits.OVRENL = 1;
-
-        // Start 200us delay before turning PWM1 ON
+        // Start delay before turning PWM1 ON
         zc_state = ZC_WAIT_DT1_OFF;
         Timer3_LoadAndStart_310us();
     }
@@ -536,24 +649,41 @@ void __attribute__((interrupt, no_auto_psv)) _T2Interrupt(void)
     IFS0bits.T2IF = 0;
 
     if (!pwm_ramp_active)
+    {
+        T2CONbits.TON = 0;
+        IEC0bits.T2IE = 0;
         return;
+    }
 
-    if (pwm_ramp_current_freq > (pwm_ramp_target_freq + 1000UL))
-        pwm_ramp_current_freq -= 8000UL;
+    if (pwm_ramp_current_freq > (pwm_ramp_target_freq + RAMP_STEP_HZ))
+        pwm_ramp_current_freq -= RAMP_STEP_HZ;
     else
         pwm_ramp_current_freq = pwm_ramp_target_freq;
 
-    uint16_t period = (uint16_t)((FPWM / pwm_ramp_current_freq) - 1) * 8;
-    uint16_t compare = (uint16_t)((uint32_t)period * pwm_ramp_duty / 100);
+    uint16_t period = hr_period(pwm_ramp_current_freq);
+    uint16_t compare = hr_duty(period, pwm_ramp_duty);
 
-    PWMCON1bits.IUE = 1;
-    PWMCON2bits.IUE = 1;
+    /* IUE STAYS 0.  This is the ramp glitch.
+     *
+     * PWMCONxbits.IUE = 1 makes a PDCx write take effect the instant it is
+     * stored instead of at the period boundary.  If PTMR has already passed
+     * the new compare value when the write lands, that period's compare
+     * never happens: the output simply holds its level for the rest of the
+     * cycle.  On a complementary pair that reads on the scope as a missing
+     * turn-off (the pulse runs into the next one - the "overlap") or a
+     * missing turn-on.  It is random because it depends on where PTMR
+     * happens to be when the timer interrupt is serviced.
+     *
+     * With IUE = 0 both PTPER and PDCx are double-buffered and latch
+     * together at the next rollover, so the cycle in progress is never
+     * disturbed and every cycle is a whole, self-consistent one. */
     PTPER = period;
 
     if (pwm_ramp_channel == 1)
         PDC1 = compare;
     else
         PDC2 = compare;
+
     if (pwm_ramp_current_freq > pwm_ramp_target_freq)
     {
         Timer2_LoadAndStart_20us();
@@ -562,6 +692,7 @@ void __attribute__((interrupt, no_auto_psv)) _T2Interrupt(void)
     {
         pwm_ramp_active = 0;
         T2CONbits.TON = 0;
+        IEC0bits.T2IE = 0;
     }
 }
 void __attribute__((interrupt, no_auto_psv)) _T3Interrupt(void)
@@ -574,24 +705,21 @@ void __attribute__((interrupt, no_auto_psv)) _T3Interrupt(void)
     {
     case ZC_WAIT_DT1_ON:
     {
-        // 200us expired - turn PWM2H and PWM2L constant HIGH
-        IOCON2bits.PMOD = 0b11; // Independent mode [1]
-        IOCON2bits.PENH = 1;    // Pin owned by module [1]
+        /* Turn PWM2H and PWM2L constant HIGH.  PWM2 is already overridden
+         * (INT1 did it), so PMOD/PEN can be changed without the pins
+         * moving; only the OVRDAT store below is visible at the pad. */
+        IOCON2bits.PMOD = 0b11; // Independent mode
+        IOCON2bits.PENH = 1;    // Pin owned by module
         IOCON2bits.PENL = 1;
-        IOCON2bits.OVRDAT = 0b11; // H=1, L=1 [1]
-        IOCON2bits.OVRENH = 1;    // Override ON [1]
-        IOCON2bits.OVRENL = 1;    // Override ON [1]
-        // KILL PWM1
+        OVR_ASSERT(IOCON2, 0b11); // H = 1, L = 1, one store
+
+        // Keep PWM1 dead
         IOCON1bits.PMOD = 0b11;
         IOCON1bits.PENH = 1;
         IOCON1bits.PENL = 1;
-        IOCON1bits.OVRDAT = 0b00;
-        IOCON1bits.OVRENH = 1;
-        IOCON1bits.OVRENL = 1;
+        OVR_ASSERT(IOCON1, 0b00);
 
-        // ENABLE
-        PTCONbits.PTEN = 1;
-        // Start second 200us delay
+        // Start second delay
         zc_state = ZC_WAIT_DT2_ON;
         Timer3_LoadAndStart_200us();
         break;
@@ -599,18 +727,54 @@ void __attribute__((interrupt, no_auto_psv)) _T3Interrupt(void)
 
     case ZC_WAIT_DT2_ON:
     {
-        // 200us expired after PWM2 ON
-        // Enable PWM1 outputs as real PWM
-        IOCON1bits.PMOD = 0b00; // Complementary PWM
+        /* ---------------------------------------------------------------- *
+         * Bring PWM1 up cleanly at ACZVS_START_FREQ.  THIS is the oversized
+         * first pulse.
+         *
+         * What used to happen: the override was released here, mid-period,
+         * while PTPER still held the PREVIOUS half-cycle's ramped-down value
+         * (e.g. 9424 counts = 100 kHz).  PTPER is double-buffered, so the
+         * 500 kHz value written on the next line does not reach the period
+         * comparator until the next rollover - up to a full 10 us away.  The
+         * first live cycle therefore ran at the OLD, slow period with the
+         * new ~1 us duty compare, which on PWM1L is a ~9 us pulse: the "very
+         * large first pulse".  From cycle 2 the new PTPER is latched and
+         * everything looks right, which matches "it stabilises after 1-2
+         * cycles".  Its width jittered because the release landed at a
+         * random point in that period, set by T3 interrupt latency.
+         *
+         * Fix: stop the time base, load period and duty while it is stopped
+         * (writes go straight to the comparators with PTEN = 0), release the
+         * override while the pins cannot move, then start.  The first edge
+         * is then the count-0 edge of a whole 500 kHz period.
+         *
+         * SCOPE CHECK: measure the width of the very first PWM1H pulse of a
+         * half-cycle.  It must equal the steady 500 kHz pulse.  If it comes
+         * out SHORT rather than correct, this part has PTMR not resetting on
+         * PTEN = 0; in that case delete the PTEN lines here and instead set
+         * IOCON1bits.OSYNC = 1 in PWM_Mode(), which makes the override
+         * release latch at a period boundary in hardware - the same boundary
+         * PTPER and PDC1 latch on.
+         * ---------------------------------------------------------------- */
+        PTCONbits.PTEN = 0;
+
+        PWMCON1bits.IUE = 0; /* duty latches at the boundary   */
+        PWMCON2bits.IUE = 0;
+        PWMCON1bits.MDCS = 0; /* PDC1 is the duty source        */
+        PWMCON2bits.MDCS = 0;
+        PWMCON1bits.ITB = 0; /* PTPER is the period            */
+        PWMCON2bits.ITB = 0;
+        PHASE1 = 0;
+        PHASE2 = 0;
+
+        PTPER = aczvs_start_per;
+        PDC1 = aczvs_start_dty;
+        PDC2 = aczvs_start_dty;
+
+        IOCON1bits.PMOD = 0b00; /* complementary, still overridden */
         IOCON1bits.PENH = 1;
         IOCON1bits.PENL = 1;
-        IOCON1bits.OVRENH = 0;
-        IOCON1bits.OVRENL = 0;
-
-        // Make sure PWM timebase is running
-        PTPER = 1879;
-        PDC1 = 939;
-        PDC2 = 939;
+        OVR_RELEASE(IOCON1); /* one store - both halves together */
 
         PTCONbits.PTEN = 1;
 
@@ -621,57 +785,65 @@ void __attribute__((interrupt, no_auto_psv)) _T3Interrupt(void)
     }
     case ZC_WAIT_DT3_ON:
     {
-        // Kill PWM2 immediately
+        // Kill PWM2 immediately - override FIRST, then PMOD
+        Ramp_Abort();
+        OVR_ASSERT(IOCON2, 0b00);
         IOCON2bits.PMOD = 0b11;
         IOCON2bits.PENH = 1;
         IOCON2bits.PENL = 1;
-        IOCON2bits.OVRDAT = 0b00;
-        IOCON2bits.OVRENH = 1;
-        IOCON2bits.OVRENL = 1;
         zc_state = ZC_IDLE;
         Timer3_LoadAndStart_330us();
         break;
     }
     case ZC_WAIT_DT4_ON:
     {
-        // Kill PWM1 immediately
+        // Kill PWM1 immediately - override FIRST, then PMOD
+        Ramp_Abort();
+        OVR_ASSERT(IOCON1, 0b00);
         IOCON1bits.PMOD = 0b11;
         IOCON1bits.PENH = 1;
         IOCON1bits.PENL = 1;
-        IOCON1bits.OVRDAT = 0b00;
-        IOCON1bits.OVRENH = 1;
-        IOCON1bits.OVRENL = 1;
         zc_state = ZC_WAIT_DT3_ON;
         Timer3_LoadAndStart_200us();
         break;
     }
     case ZC_WAIT_DT1_OFF:
     {
-        // Force PWM1 HIGH continuously
+        // Force PWM1 HIGH continuously (already overridden by INT1)
         IOCON1bits.PMOD = 0b11; // independent mode
         IOCON1bits.PENH = 1;
         IOCON1bits.PENL = 1;
-        IOCON1bits.OVRDAT = 0b11; // both high
-        IOCON1bits.OVRENH = 1;
-        IOCON1bits.OVRENL = 1;
+        OVR_ASSERT(IOCON1, 0b11); // both high, one store
 
-        // Start second 200us delay
+        // Start second delay
         zc_state = ZC_WAIT_DT2_OFF;
         Timer3_LoadAndStart_200us();
         break;
     }
     case ZC_WAIT_DT2_OFF:
     {
-        // Let PWM2 switch normally again
-        IOCON2bits.PMOD = 0b00; // complementary PWM
+        /* Mirror of ZC_WAIT_DT2_ON - same clean restart, PWM2 this time.
+         * See the long comment there for why the time base is stopped. */
+        PTCONbits.PTEN = 0;
+
+        PWMCON1bits.IUE = 0;
+        PWMCON2bits.IUE = 0;
+        PWMCON1bits.MDCS = 0;
+        PWMCON2bits.MDCS = 0;
+        PWMCON1bits.ITB = 0;
+        PWMCON2bits.ITB = 0;
+        PHASE1 = 0;
+        PHASE2 = 0;
+
+        PTPER = aczvs_start_per;
+        PDC2 = aczvs_start_dty;
+        PDC1 = aczvs_start_dty;
+
+        IOCON2bits.PMOD = 0b00; /* complementary, still overridden */
         IOCON2bits.PENH = 1;
         IOCON2bits.PENL = 1;
-        IOCON2bits.OVRENH = 0;
-        IOCON2bits.OVRENL = 0;
-        PTPER = 1879;
-        PDC2 = 939;
-        PDC1 = 939;
-        // Make sure PWM timebase is running
+        OVR_RELEASE(IOCON2); /* one store */
+
         PTCONbits.PTEN = 1;
 
         zc_state = ZC_WAIT_DT3_OFF;
@@ -682,12 +854,11 @@ void __attribute__((interrupt, no_auto_psv)) _T3Interrupt(void)
     case ZC_WAIT_DT4_OFF:
     {
         // Kill PWM1 immediately
+        Ramp_Abort();
+        OVR_ASSERT(IOCON1, 0b00);
         IOCON1bits.PMOD = 0b11;
         IOCON1bits.PENH = 1;
         IOCON1bits.PENL = 1;
-        IOCON1bits.OVRDAT = 0b00;
-        IOCON1bits.OVRENH = 1;
-        IOCON1bits.OVRENL = 1;
         zc_state = ZC_IDLE;
         Timer3_LoadAndStart_330us();
         break;
@@ -695,12 +866,11 @@ void __attribute__((interrupt, no_auto_psv)) _T3Interrupt(void)
     case ZC_WAIT_DT3_OFF:
     {
         // Kill PWM2 immediately
+        Ramp_Abort();
+        OVR_ASSERT(IOCON2, 0b00);
         IOCON2bits.PMOD = 0b11;
         IOCON2bits.PENH = 1;
         IOCON2bits.PENL = 1;
-        IOCON2bits.OVRDAT = 0b00;
-        IOCON2bits.OVRENH = 1;
-        IOCON2bits.OVRENL = 1;
         zc_state = ZC_WAIT_DT4_OFF;
         Timer3_LoadAndStart_200us();
         break;
@@ -736,8 +906,8 @@ void PWM_Init(void)
     // we get 35 * 0.5 = 17.5
     DTR1 = 0; // No dead-time on high side
     DTR2 = 0;
-    ALTDTR1 = 0; // No dead-time on low  side
-    ALTDTR1 = 0;
+    ALTDTR1 = 0;               // No dead-time on low  side
+    ALTDTR2 = 0;               // was a second "ALTDTR1 = 0" - ALTDTR2 never got cleared
     FCLCON1bits.FLTMOD = 0b11; // Fault input DISABLED
     FCLCON2bits.FLTMOD = 0b11; // Fault input DISABLED
     IOCON1bits.OVRENH = 0;     // PWM module drives PWM1H
@@ -754,7 +924,7 @@ void PWM_Init(void)
     IOCON2bits.POLL = 0;       // PWM1L active HIGH
     IOCON1bits.PMOD = 0b00;    // independant opration
     IOCON2bits.PMOD = 0b00;    // independant opration
-                            //  PWM1L = NOT PWM1H  (hardware)
+                               //  PWM1L = NOT PWM1H  (hardware)
     // which means High and LOW can only be opposites of each other, never the same
     // HL AND HH CANNOT BE ACTIVE AT THE SAME TIME
 
@@ -816,19 +986,38 @@ void PWM_Update(uint32_t freq, uint8_t duty)
 }
 void PWM_Mode(uint32_t freq, uint8_t duty, uint16_t dt_ns)
 {
-    (void)freq;
+    (void)freq; /* the ramp TARGET is new_freq; this starts at 500 kHz */
     PTCONbits.PTEN = 0;
 
-    uint16_t period = (uint16_t)((FPWM / 500000UL) - 1) * 8;
-    uint16_t compare = (uint16_t)((uint32_t)period * duty / 100);
+    /* One source of truth for the start point - the T3 handler reloads
+     * exactly these two values at the top of every half-cycle. */
+    aczvs_start_per = hr_period(ACZVS_START_FREQ);
+    aczvs_start_dty = hr_duty(aczvs_start_per, duty);
 
-    PTPER = period;
-    PDC1 = compare;
-    PDC2 = compare;
+    PTPER = aczvs_start_per;
+    PDC1 = aczvs_start_dty;
+    PDC2 = aczvs_start_dty;
+
+    /* Duty/period source and update policy stated explicitly.  MDCS in
+     * particular was never set here: if command 0x05 (PWM_Update) had run
+     * earlier in the session it left MDCS = 1, and every PDC1 write in the
+     * AC-ZVS path was then ignored in favour of a stale MDC. */
+    PWMCON1bits.MDCS = 0; /* PDCx is the duty source, not MDC */
+    PWMCON2bits.MDCS = 0;
+    PWMCON1bits.ITB = 0; /* PTPER is the period               */
+    PWMCON2bits.ITB = 0;
+    PWMCON1bits.IUE = 0; /* duty latches at the boundary      */
+    PWMCON2bits.IUE = 0;
+    PWMCON1bits.DTC = 0b00; /* positive dead time             */
+    PWMCON2bits.DTC = 0b00;
+    PHASE1 = 0;
+    PHASE2 = 0;
 
     // PWM1 setup
     IOCON1bits.PENH = 1;
     IOCON1bits.PENL = 1;
+    IOCON1bits.POLH = 0;
+    IOCON1bits.POLL = 0;
     IOCON1bits.PMOD = 0b00;    // complementary PWM
     FCLCON1bits.FLTMOD = 0b11; // disable fault
     DTR1 = dt_ns;
@@ -838,21 +1027,23 @@ void PWM_Mode(uint32_t freq, uint8_t duty, uint16_t dt_ns)
     IOCON2bits.PMOD = 0b00; // complementary PWM
     IOCON2bits.PENH = 1;
     IOCON2bits.PENL = 1;
-    IOCON2bits.OVRENH = 0; // no override
-    IOCON2bits.OVRENL = 0; // no override
-    IOCON2bits.OVRDAT = 0b00;
+    IOCON2bits.POLH = 0;
+    IOCON2bits.POLL = 0;
+    OVR_RELEASE(IOCON2);       // no override, one store
     FCLCON2bits.FLTMOD = 0b11; // disable fault
     DTR2 = dt_ns;
     ALTDTR2 = dt_ns;
 
-    // PWM interrupt settings
-    SEVTCMP = 8;
-    PTCONbits.SEIEN = 1;
+    /* The special-event (PSEM) interrupt is the Rd(on) clamp's, and the
+     * clamp is a DC-ZVS feature.  Enabling it here made it fire every PWM
+     * period throughout AC-ZVS for nothing, adding latency to the T2 and T3
+     * handlers whose timing actually matters.  Left disabled; the ISR also
+     * bails out on ac_zvs now as a second line of defence. */
+    PTCONbits.SEIEN = 0;
+    IEC3bits.PSEMIE = 0;
     IFS3bits.PSEMIF = 0;
-    IEC3bits.PSEMIE = 1;
-    IPC14bits.PSEMIP = 4;
 
-    PTCONbits.PTEN = 0;
+    PTCONbits.PTEN = 0; /* INT1 / T3 bring the outputs up */
 }
 void PWM_Mode2(uint32_t freq, uint8_t duty, uint16_t dt_ns)
 {

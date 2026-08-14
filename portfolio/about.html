@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>About — Ella Lewis</title>
+<link rel="stylesheet" href="style.css">
+<noscript><style>
+  /* JavaScript off: show everything immediately, no animation */
+  .reveal{opacity:1!important;transform:none!important;filter:none!important}
+  .spec-strip .spec{opacity:1!important;transform:none!important}
+  .section-head .rule{transform:scaleX(1)!important}
+  .timeline .tl-item::before{transform:scale(1)!important}
+</style></noscript>
+</head>
+<body>
+
+<header class="site-header">
+  <nav class="nav">
+    <a class="brand" href="index.html">ella_lewis<span class="dot">.</span>eng</a>
+    <div class="nav-links">
+      <a href="index.html">home</a>
+      <a href="projects.html">projects</a>
+      <a href="research.html">research</a>
+      <a href="about.html" class="active">about</a>
+      <a href="contact.html">contact</a>
+      <a href="resume.pdf">resume ↗</a>
+    </div>
+  </nav>
+</header>
+
+<main class="wrap">
+
+  <section class="hero" style="padding-bottom:32px">
+    <span class="kicker">About</span>
+    <h1 style="font-size:clamp(2rem,4.5vw,3rem)">Hi, I'm Ella.</h1>
+    <p class="lead">
+      I'm an electrical engineer working across GaN power electronics, PCB design and
+      embedded firmware. Most of what I enjoy sits at the seams — where the device physics,
+      the board layout and the control code all have to agree, and where getting one of
+      them wrong shows up as a waveform nobody can explain.
+    </p>
+  </section>
+
+  <section class="tight">
+    <div class="cols">
+
+      <div>
+        <div class="section-head">
+          <span class="idx">01</span><h2>Experience</h2><span class="rule"></span>
+        </div>
+
+        <div class="timeline">
+
+          <div class="tl-item">
+            <div class="when">AUG 2025 — PRESENT · OTTAWA, ON</div>
+            <h3>Product Applications Engineering Intern</h3>
+            <div class="where">Infineon Technologies</div>
+            <ul>
+              <li>Characterized GaN-on-Si integrated power-stage devices with electro-thermal SPICE models, extracting temperature-dependent parameters — nonlinear capacitance variation, R<sub>DS(on)</sub> degradation and protection circuit behaviour.</li>
+              <li>Ran electrical characterization under DPT, ZVS and continuous switching, investigating dynamic R<sub>DS(on)</sub> degradation, I<sub>DSAT</sub> shifts and thermal effects from &minus;50&nbsp;°C to 150&nbsp;°C.</li>
+              <li>Conducted electrical stress testing to investigate PXP degradation, assessing reliability impact through post-stress device characterization.</li>
+              <li>Partnered with the Failure Analysis team on GaN HEMT investigation using SEM imaging, cross-sectioning and optical/photon microscopy — supporting root-cause analysis, competitor benchmarking and failure mechanism assessment.</li>
+              <li>Building an embedded characterization platform: Python GUI to MCU control of GaN BDS gate signals on a new EVB.</li>
+            </ul>
+          </div>
+
+          <div class="tl-item">
+            <div class="when">JAN 2026 — MAY 2026 · WATERLOO, ON</div>
+            <h3>Undergraduate Research Assistant — GaN RF e-HEMT</h3>
+            <div class="where">University of Waterloo · Prof. Lan Wei</div>
+            <ul>
+              <li>Developed a temperature-aware compact model for GaN RF e-HEMTs using the MIT Virtual Source Gate (MVSG) framework, with parameter extraction and nonlinear curve fitting on measured device data in Keysight IC-CAP.</li>
+              <li>Assisted with wafer-level probing station measurements, acquiring on-wafer DC and bidirectional data used directly for compact model extraction.</li>
+              <li>Calibrated gate-leakage model parameters to hold predictive accuracy across temperature sweeps, improving MVSG reliability for high-power, high-frequency RF in defence and space environments.</li>
+              <li>First author on the resulting CSSTC 2026 conference paper.</li>
+            </ul>
+          </div>
+
+          <div class="tl-item">
+            <div class="when">JAN 2025 — MAY 2025 · VANCOUVER, BC</div>
+            <h3>Electrical Distribution Intern</h3>
+            <div class="where">EQUANS (Plan Group)</div>
+            <ul>
+              <li>Validated 70% of 600&nbsp;V–1.2&nbsp;kV MV substation infrastructure by cross-referencing short-circuit and arc flash studies, surfacing 30+ transformer impedance and breaker miscoordination issues.</li>
+              <li>Performed load calculations for feeders and branch circuits, ensuring NEC code-compliant conductor sizing and correcting discrepancies in panelboard schedules.</li>
+              <li>Built a Python QA/QC automation tool to continuously audit LV and MV board designs against spec sheets, reaching 95% accuracy on non-compliant component detection and enabling milestone tracking.</li>
+            </ul>
+          </div>
+
+          <div class="tl-item">
+            <div class="when">DESIGN TEAM</div>
+            <h3>Avionics / PCB Design</h3>
+            <div class="where">Waterloo Rocketry</div>
+            <ul>
+              <li>Designed the injector sensor hub — a 2-layer board aggregating six analog sensor ports onto the vehicle CAN bus.</li>
+              <li>Worked to shared avionics conventions across connectors, CAN addressing and mechanical footprint.</li>
+            </ul>
+          </div>
+
+          <div class="tl-item">
+            <div class="when">SEPT 2024 — PRESENT · WATERLOO, ON</div>
+            <h3>B.Eng Honours Electrical Engineering, Co-op</h3>
+            <div class="where">University of Waterloo</div>
+            <ul>
+              <li>3.95 GPA · President's Scholarship.</li>
+              <li>Relevant coursework: Semiconductor Chemistry I, Electronic Circuits, Digital Computers I.</li>
+            </ul>
+          </div>
+
+        </div>
+
+        <div class="section-head" style="margin-top:56px">
+          <span class="idx">02</span><h2>What I've learned the hard way</h2><span class="rule"></span>
+        </div>
+        <p>
+          GaN is unforgiving in a way silicon is not. At roughly 100 V/ns slew rate, layout
+          decisions that would be harmless on a silicon design become the dominant error
+          term — and the same parasitics that ruin your switching waveform also corrupt the
+          serial link you were using to observe it. Good layout practice and disciplined
+          in-lab debugging aren't polish on top of the design; on these parts they are the
+          design.
+        </p>
+
+        <div class="section-head" style="margin-top:56px">
+          <span class="idx">03</span><h2>Outside the lab</h2><span class="rule"></span>
+        </div>
+        <p>
+          <!-- ADD: your hobbies section — the deck promises this but doesn't fill it in. -->
+          A couple of lines about what you get up to away from a bench. Your deck had a slide
+          reserved for this, so it's clearly something you wanted to say — worth writing.
+        </p>
+      </div>
+
+      <aside>
+        <div class="panel" style="margin-bottom:20px">
+          <h3 style="margin-top:0">Details</h3>
+          <table class="spec-table">
+            <tr><td>Based in</td><td>Ottawa, ON</td></tr>
+            <tr><td>Studying</td><td>B.Eng EE Co-op, Waterloo</td></tr>
+            <tr><td>GPA</td><td>3.95 · President's Scholarship</td></tr>
+            <tr><td>Languages</td><td>English / French</td></tr>
+            <tr><td>Open to</td><td>Power electronics / embedded roles</td></tr>
+          </table>
+          <div class="btn-row" style="margin-top:20px">
+            <a class="btn" href="resume.pdf">Download resume ↗</a>
+          </div>
+        </div>
+
+        <div class="panel" style="margin-bottom:20px">
+          <h3 style="margin-top:0">Languages &amp; tools</h3>
+          <div class="skill-group">
+            <h4>Programming</h4>
+            <div class="tags">
+              <span class="tag">Python</span><span class="tag">C / C++</span>
+              <span class="tag">Verilog-A</span><span class="tag">VHDL</span><span class="tag">Assembly</span>
+            </div>
+          </div>
+          <div class="skill-group" style="margin-bottom:0">
+            <h4>Tools</h4>
+            <div class="tags">
+              <span class="tag">KiCad</span><span class="tag">Altium</span>
+              <span class="tag">SPICE / PSPICE</span><span class="tag">PLECS</span>
+              <span class="tag">Keysight IC-CAP</span><span class="tag">TCAD</span>
+              <span class="tag">MATLAB</span><span class="tag">AutoCAD</span>
+              <span class="tag">Revit</span><span class="tag">Bluebeam</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel" style="margin-bottom:20px">
+          <h3 style="margin-top:0">Domains</h3>
+          <div class="tags">
+            <span class="tag">GaN BDS</span><span class="tag">GaN-on-Si IPS</span>
+            <span class="tag">RF HEMTs</span><span class="tag">EV chargers / OBC</span>
+            <span class="tag">Soft switching</span><span class="tag">Compact modelling</span>
+            <span class="tag">MV distribution</span><span class="tag">Failure analysis</span>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h3 style="margin-top:0">Bench comfortable with</h3>
+          <table class="spec-table">
+            <tr><td>Supplies</td><td>up to 400 V</td></tr>
+            <tr><td>Temperature</td><td>&minus;50 °C to 150 °C</td></tr>
+            <tr><td>Converters</td><td>boost to 8 kW</td></tr>
+            <tr><td>Methods</td><td>DPT, ZVS, continuous switching</td></tr>
+            <tr><td>Analysis</td><td>SEM, cross-section, photon microscopy</td></tr>
+            <tr><td>Capture</td><td>High-BW scopes, differential probes</td></tr>
+            <tr><td>Process</td><td>Board bring-up, rework, debug</td></tr>
+          </table>
+        </div>
+      </aside>
+
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <span>© 2026 Ella Lewis</span>
+    <span>
+      <a href="mailto:elcslewis@gmail.com">email</a> ·
+      <a href="https://github.com/ecslewis">github</a> ·
+      <a href="https://www.linkedin.com/in/elcslewis/">linkedin</a>
+    </span>
+  </div>
+</footer>
+
+<script src="scroll.js" defer></script>
+
+</body>
+</html>

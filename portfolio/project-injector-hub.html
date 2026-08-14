@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Injector Sensor Hub &mdash; Ella Lewis</title>
+<link rel="stylesheet" href="style.css">
+<noscript><style>
+  /* JavaScript off: show everything immediately, no animation */
+  .reveal{opacity:1!important;transform:none!important;filter:none!important}
+  .spec-strip .spec{opacity:1!important;transform:none!important}
+  .section-head .rule{transform:scaleX(1)!important}
+  .timeline .tl-item::before{transform:scale(1)!important}
+</style></noscript>
+</head>
+<body>
+
+<header class="site-header">
+  <nav class="nav">
+    <a class="brand" href="index.html">ella_lewis<span class="dot">.</span>eng</a>
+    <div class="nav-links">
+      <a href="index.html">home</a>
+      <a href="projects.html" class="active">projects</a>
+      <a href="research.html" class="">research</a>
+      <a href="about.html">about</a>
+      <a href="contact.html">contact</a>
+      <a href="resume.pdf">resume &#8599;</a>
+    </div>
+  </nav>
+</header>
+
+<main class="wrap">
+
+  <section class="hero" style="padding-bottom:24px">
+    <a class="back" href="projects.html">&larr; back to projects</a>
+    <span class="kicker">PCB Design &middot; Waterloo Rocketry</span>
+    <h1 style="font-size:clamp(1.8rem,4vw,2.7rem)">Injector Sensor Hub &mdash; Waterloo Rocketry</h1>
+    <p class="lead">A two-layer flight board that aggregates six analog sensor feeds from around the rocket and reports them over CAN. Designed for a vibration-heavy, electrically noisy environment where you get exactly one shot at it working.</p>
+  </section>
+
+  <section class="tight">
+    <div class="spec-strip">
+      <div class="spec"><div class="k">Sensor ports</div><div class="v">6 analog</div></div>
+      <div class="spec"><div class="k">MCU</div><div class="v">PIC18F26K83</div></div>
+      <div class="spec"><div class="k">Bus</div><div class="v">CAN</div></div>
+      <div class="spec"><div class="k">Rails</div><div class="v">12 V &rarr; 3V3</div></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="cols">
+      <div>
+        <div class="section-head">
+          <span class="idx">01</span><h2>Role on the rocket</h2><span class="rule"></span>
+        </div>
+        <p>The hub sits between the rocket's injector sensors and the vehicle's CAN bus. Six analog sensor ports collect readings from other components; a Microchip PIC18F26K83 digitizes and packages them; the CAN transceiver puts them on the bus alongside every other node.</p>
+        <p>Power comes off the rocket's 12&nbsp;V source and is stepped down on-board to 3V3 for IC communication and power-up, so the board needs only one supply input.</p>
+        <div class="section-head" style="margin-top:48px">
+          <span class="idx">02</span><h2>Design choices</h2><span class="rule"></span>
+        </div>
+        <table class="spec-table">
+            <tr><td>Stackup</td><td>2-layer, specified for a robust mechanical environment</td></tr>
+            <tr><td>Clock</td><td>External crystal, isolated on the layout</td></tr>
+            <tr><td>Power</td><td>12 V rocket bus stepped down to 3V3 on-board</td></tr>
+            <tr><td>Comms</td><td>CAN &mdash; differential, multi-drop, standard across the vehicle</td></tr>
+            <tr><td>Mounting</td><td>Four corner mounting holes sized for the airframe bracket</td></tr>
+        </table>
+        <p>The external crystal was isolated deliberately: clock integrity is the thing you least want compromised by switching noise on a shared board, and it costs almost nothing to keep it away from the noisy sections at layout time.</p>
+        <div class="section-head" style="margin-top:48px">
+          <span class="idx">03</span><h2>The board</h2><span class="rule"></span>
+        </div>
+        <div class="shot-grid">
+          <figure><span class="shot"><img src="images/injector-front.jpg" alt="Injector sensor hub front side render"></span><figcaption>Front &mdash; CAN transceiver and isolated crystal</figcaption></figure>
+          <figure><span class="shot"><img src="images/injector-back.jpg" alt="Injector sensor hub back side render"></span><figcaption>Back &mdash; six analog sensor ports and MCU</figcaption></figure>
+        </div>
+        <div class="section-head" style="margin-top:48px">
+          <span class="idx">04</span><h2>Team context</h2><span class="rule"></span>
+        </div>
+        <p>Built as part of Waterloo Rocketry, co-designed with Koby Seeligsohn. Working inside a design team meant the board had to conform to conventions set by the rest of the avionics stack &mdash; connector choice, CAN addressing and mechanical footprint were not mine to pick unilaterally, which is a useful constraint to design under.</p>
+      </div>
+      <aside>
+        <div class="panel" style="margin-bottom:20px">
+          <h3 style="margin-top:0">At a glance</h3>
+          <table class="spec-table">
+            <tr><td>Team</td><td>Waterloo Rocketry</td></tr>
+            <tr><td>Year</td><td>2025</td></tr>
+            <tr><td>Role</td><td>Schematic &amp; layout (co-designed)</td></tr>
+            <tr><td>MCU</td><td>Microchip PIC18F26K83</td></tr>
+            <tr><td>Layers</td><td>2</td></tr>
+            <tr><td>Interfaces</td><td>6 analog in, CAN out</td></tr>
+          </table>
+
+        </div>
+
+      </aside>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <span>&copy; 2026 Ella Lewis</span>
+    <span>
+      <a href="mailto:elcslewis@gmail.com">email</a> &middot;
+      <a href="https://github.com/ecslewis">github</a> &middot;
+      <a href="https://www.linkedin.com/in/elcslewis/">linkedin</a>
+    </span>
+  </div>
+</footer>
+
+<script src="scroll.js" defer></script>
+
+</body>
+</html>

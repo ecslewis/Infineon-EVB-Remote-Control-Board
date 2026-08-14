@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Projects — Ella Lewis</title>
+<link rel="stylesheet" href="style.css">
+<noscript><style>
+  /* JavaScript off: show everything immediately, no animation */
+  .reveal{opacity:1!important;transform:none!important;filter:none!important}
+  .spec-strip .spec{opacity:1!important;transform:none!important}
+  .section-head .rule{transform:scaleX(1)!important}
+  .timeline .tl-item::before{transform:scale(1)!important}
+</style></noscript>
+</head>
+<body>
+
+<header class="site-header">
+  <nav class="nav">
+    <a class="brand" href="index.html">ella_lewis<span class="dot">.</span>eng</a>
+    <div class="nav-links">
+      <a href="index.html">home</a>
+      <a href="projects.html" class="active">projects</a>
+      <a href="research.html">research</a>
+      <a href="about.html">about</a>
+      <a href="contact.html">contact</a>
+      <a href="resume.pdf">resume ↗</a>
+    </div>
+  </nav>
+</header>
+
+<main class="wrap">
+
+  <section class="hero" style="padding-bottom:32px">
+    <span class="kicker">Index</span>
+    <h1 style="font-size:clamp(2rem,4.5vw,3rem)">Projects</h1>
+    <p class="lead">
+      Boards I designed, firmware I wrote, and the test platforms in between.
+      Each one links to a write-up with the design decisions and what I'd change.
+    </p>
+  </section>
+
+  <section class="tight">
+
+    <div class="filters">
+      <button class="filter active" data-filter="all">all</button>
+      <button class="filter" data-filter="power">power electronics</button>
+      <button class="filter" data-filter="pcb">pcb design</button>
+      <button class="filter" data-filter="firmware">firmware</button>
+      <button class="filter" data-filter="rf">rf &amp; sensing</button>
+      <button class="filter" data-filter="software">systems software</button>
+    </div>
+
+    <div class="grid" id="project-grid">
+
+      <!-- ---------- GaN ZVS platform ---------- -->
+      <article class="card" data-tags="power firmware pcb">
+        <div class="card-media"><img src="images/gan-board-front.jpg" alt="900 V GaN BDS control daughter card, front"></div>
+        <div class="card-top"><span class="status">Active</span><span>2026</span></div>
+        <h3><a class="stretch" href="project-gan-platform.html">Universal ZVS / Characterization Platform</a></h3>
+        <p>
+          dsPIC daughter card and Python GUI driving a 900&nbsp;V GaN bidirectional switch —
+          AC-ZVS, DC-ZVS, buck/boost and dynamic pulsed R<sub>DS(on)</sub> tests over
+          CRC-protected RS-485.
+        </p>
+        <div class="card-foot">
+          <div class="tags">
+            <span class="tag">C</span><span class="tag">dsPIC33</span><span class="tag">RS-485</span>
+            <span class="tag">Python</span><span class="tag">GaN</span>
+          </div>
+        </div>
+      </article>
+
+      <!-- ---------- mmWave sensor ---------- -->
+      <article class="card" data-tags="pcb rf firmware">
+        <div class="card-media"><img src="images/mmwave-v11.jpg" alt="mmWave sensor module v1.1 3D render"></div>
+        <div class="card-top"><span class="status">v1.1 built</span><span>2026</span></div>
+        <h3><a class="stretch" href="project-mmwave.html">Room Watchdog — mmWave Sensor Module</a></h3>
+        <p>
+          LD2410 24&nbsp;GHz presence radar plus a PIR watchdog on an ESP32-S3. The PIR gates
+          the power-hungry radar so idle current stays low — two revisions, USB-C, TVS-protected.
+        </p>
+        <div class="card-foot">
+          <div class="tags">
+            <span class="tag">ESP32-S3</span><span class="tag">LD2410 24 GHz</span>
+            <span class="tag">PIR</span><span class="tag">USB-C</span><span class="tag">Antenna layout</span>
+          </div>
+        </div>
+      </article>
+
+      <!-- ---------- Battery pack ---------- -->
+      <article class="card" data-tags="power pcb">
+        <div class="card-media"><img src="images/battery-block.jpg" alt="Battery pack architecture block diagram"></div>
+        <div class="card-top"><span class="status wip">In progress</span><span>2026</span></div>
+        <h3><a class="stretch" href="project-battery.html">5000 mAh USB-C PD Battery Pack</a></h3>
+        <p>
+          Portable pack targeting 40&nbsp;W USB-C power delivery, with load-adaptive
+          conversion, ultra-low quiescent current and full over-current / over-temperature
+          protection.
+        </p>
+        <div class="card-foot">
+          <div class="tags">
+            <span class="tag">USB-C PD</span><span class="tag">BMS</span>
+            <span class="tag">Buck/Boost</span><span class="tag">Fuel gauge</span>
+          </div>
+        </div>
+      </article>
+
+      <!-- ---------- NAND flash simulator ---------- -->
+      <article class="card" data-tags="software firmware">
+        <div class="card-media"><img src="images/nand-blockmap.svg" alt="NAND FTL block map showing valid, stale and free pages"></div>
+        <div class="card-top"><span class="status">Complete</span><span>2026</span></div>
+        <h3><a class="stretch" href="project-nand.html">NAND Flash Simulator &amp; Translation Layer</a></h3>
+        <p>
+          Dependency-free C11 model of NAND at block/page level, plus an FTL with
+          out-of-place updates, greedy garbage collection and wear levelling — so you can
+          watch write amplification climb from 1.00× to 1.30×.
+        </p>
+        <div class="card-foot">
+          <div class="tags">
+            <span class="tag">C11</span><span class="tag">FTL</span>
+            <span class="tag">Garbage collection</span><span class="tag">ASan / UBSan</span>
+          </div>
+        </div>
+      </article>
+
+      <!-- ---------- Injector sensor hub ---------- -->
+      <article class="card" data-tags="pcb firmware">
+        <div class="card-media"><img src="images/injector-back.jpg" alt="Injector sensor hub PCB, back side"></div>
+        <div class="card-top"><span class="status archived">Complete</span><span>2025</span></div>
+        <h3><a class="stretch" href="project-injector-hub.html">Injector Sensor Hub — Waterloo Rocketry</a></h3>
+        <p>
+          Two-layer flight board aggregating six analog sensor ports and reporting over CAN.
+          12&nbsp;V rocket bus stepped to 3V3, external crystal, designed for a rough ride.
+        </p>
+        <div class="card-foot">
+          <div class="tags">
+            <span class="tag">PIC18F26K83</span><span class="tag">CAN</span>
+            <span class="tag">2-layer</span><span class="tag">Analog front end</span>
+          </div>
+        </div>
+      </article>
+
+      <!-- ---------- Buck converter ---------- -->
+      <article class="card" data-tags="power pcb">
+        <div class="card-media"><img src="images/buck-3d.jpg" alt="Adjustable buck converter daughter card 3D render"></div>
+        <div class="card-top"><span class="status archived">Complete</span><span>2025</span></div>
+        <h3><a class="stretch" href="project-buck.html">Adjustable Buck Converter Daughter Card</a></h3>
+        <p>
+          LM2596S-ADJ based step-down accepting 8–40&nbsp;V in, with output set by a trim
+          resistor. A small two-layer card built to drop into other test setups.
+        </p>
+        <div class="card-foot">
+          <div class="tags">
+            <span class="tag">LM2596S-ADJ</span><span class="tag">8–40 V</span>
+            <span class="tag">2-layer</span><span class="tag">Analog</span>
+          </div>
+        </div>
+      </article>
+
+      <!-- ---------- STM32 alarm ---------- -->
+      <article class="card" data-tags="firmware pcb">
+        <div class="card-media"><img src="images/stm32-sch.jpg" alt="STM32 hall-effect alarm schematic"></div>
+        <div class="card-top"><span class="status archived">Complete</span><span>2025</span></div>
+        <h3><a class="stretch" href="project-stm32-alarm.html">Hall-Effect Anti-Break-In Alarm</a></h3>
+        <p>
+          STM32 door/window intrusion alarm designed around a 70&nbsp;dB output range
+          chosen specifically for hard-of-hearing users. Prototype plus design documentation.
+        </p>
+        <div class="card-foot">
+          <div class="tags">
+            <span class="tag">STM32</span><span class="tag">Hall effect</span>
+            <span class="tag">Embedded C</span><span class="tag">Accessibility</span>
+          </div>
+        </div>
+      </article>
+
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <span>© 2026 Ella Lewis</span>
+    <span>
+      <a href="mailto:elcslewis@gmail.com">email</a> ·
+      <a href="https://github.com/ecslewis">github</a> ·
+      <a href="https://www.linkedin.com/in/elcslewis/">linkedin</a>
+    </span>
+  </div>
+</footer>
+
+<script>
+  const buttons = document.querySelectorAll('.filter');
+  const cards = document.querySelectorAll('#project-grid .card');
+
+  buttons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      buttons.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const f = btn.dataset.filter;
+      cards.forEach(card => {
+        const tags = (card.dataset.tags || '').split(/\s+/);
+        card.classList.toggle('hidden', f !== 'all' && !tags.includes(f));
+      });
+    });
+  });
+</script>
+
+<script src="scroll.js" defer></script>
+
+</body>
+</html>

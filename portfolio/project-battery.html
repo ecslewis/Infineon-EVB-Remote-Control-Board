@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>5000 mAh USB-C PD Battery Pack &mdash; Ella Lewis</title>
+<link rel="stylesheet" href="style.css">
+<noscript><style>
+  /* JavaScript off: show everything immediately, no animation */
+  .reveal{opacity:1!important;transform:none!important;filter:none!important}
+  .spec-strip .spec{opacity:1!important;transform:none!important}
+  .section-head .rule{transform:scaleX(1)!important}
+  .timeline .tl-item::before{transform:scale(1)!important}
+</style></noscript>
+</head>
+<body>
+
+<header class="site-header">
+  <nav class="nav">
+    <a class="brand" href="index.html">ella_lewis<span class="dot">.</span>eng</a>
+    <div class="nav-links">
+      <a href="index.html">home</a>
+      <a href="projects.html" class="active">projects</a>
+      <a href="research.html" class="">research</a>
+      <a href="about.html">about</a>
+      <a href="contact.html">contact</a>
+      <a href="resume.pdf">resume &#8599;</a>
+    </div>
+  </nav>
+</header>
+
+<main class="wrap">
+
+  <section class="hero" style="padding-bottom:24px">
+    <a class="back" href="projects.html">&larr; back to projects</a>
+    <span class="kicker">Power Electronics &middot; PCB Design &middot; In Progress</span>
+    <h1 style="font-size:clamp(1.8rem,4vw,2.7rem)">5000&nbsp;mAh Portable USB-C PD Battery Pack</h1>
+    <p class="lead">A portable pack targeting 40&nbsp;W USB power delivery, with conversion that adapts to load size, quiescent current low enough to protect shelf life, and protection covering over-current, under-current and temperature.</p>
+  </section>
+
+  <section class="tight">
+    <div class="spec-strip">
+      <div class="spec"><div class="k">Capacity</div><div class="v">5000 mAh</div></div>
+      <div class="spec"><div class="k">Fast charge</div><div class="v">up to 40 W</div></div>
+      <div class="spec"><div class="k">Interface</div><div class="v">USB-C PD</div></div>
+      <div class="spec"><div class="k">Status</div><div class="v">In progress</div></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="cols">
+      <div>
+        <div class="section-head">
+          <span class="idx">01</span><h2>Design targets</h2><span class="rule"></span>
+        </div>
+        <table class="spec-table">
+            <tr><td>Output</td><td>USB-C power delivery to mobile devices, up to 40 W</td></tr>
+            <tr><td>Conversion</td><td>Smart power conversion that adapts to load size</td></tr>
+            <tr><td>Quiescent current</td><td>Ultra-low, to guarantee battery lifetime on the shelf</td></tr>
+            <tr><td>Protection</td><td>Over-current, under-current and over-temperature</td></tr>
+            <tr><td>Cells</td><td>Li-ion cell stack with dedicated BMS</td></tr>
+        </table>
+        <div class="section-head" style="margin-top:48px">
+          <span class="idx">02</span><h2>Architecture</h2><span class="rule"></span>
+        </div>
+        <p>The pack splits into a charge path and a delivery path around a shared cell stack. Input charge arrives through a USB-PD fast-charge front end into the battery charger; a fuel gauge and BMS supervise the Li-ion cells; and an adjustable buck/boost stage feeds the output PD controller so the pack can deliver correct voltage regardless of cell state of charge.</p>
+        <p>A TVS diode on the input handles surge, and an MCU coordinates the charge, gauge and conversion blocks.</p>
+        <figure>
+          <span class="shot"><img src="images/battery-block.jpg" alt="Block diagram of the battery pack architecture"></span>
+          <figcaption>System architecture &mdash; charge path, BMS and fuel gauge, adjustable buck/boost output.</figcaption>
+        </figure>
+        <div class="section-head" style="margin-top:48px">
+          <span class="idx">03</span><h2>Schematic</h2><span class="rule"></span>
+        </div>
+        <p>Schematic capture in progress. The buck/boost stage borrows directly from the adjustable buck converter card I built previously.</p>
+        <figure>
+          <span class="shot pad"><img src="images/battery-sch.jpg" alt="Schematic capture of the battery pack"></span>
+          <figcaption>Schematic capture (work in progress).</figcaption>
+        </figure>
+        <div class="section-head" style="margin-top:48px">
+          <span class="idx">04</span><h2>Open questions</h2><span class="rule"></span>
+        </div>
+        <p>Thermal behaviour at sustained 40&nbsp;W is the part I expect to be hardest &mdash; the conversion losses and the cell heating land in the same small enclosure, and the over-temperature protection needs to trip on real thermal risk rather than on normal fast-charge operation.</p>
+      </div>
+      <aside>
+        <div class="panel" style="margin-bottom:20px">
+          <h3 style="margin-top:0">At a glance</h3>
+          <table class="spec-table">
+            <tr><td>Role</td><td>Architecture, schematic, layout</td></tr>
+            <tr><td>Status</td><td>In progress, 2026</td></tr>
+            <tr><td>Capacity</td><td>5000 mAh</td></tr>
+            <tr><td>Output</td><td>USB-C PD, up to 40 W</td></tr>
+            <tr><td>Chemistry</td><td>Li-ion</td></tr>
+            <tr><td>Key blocks</td><td>BMS, fuel gauge, buck/boost</td></tr>
+          </table>
+
+        </div>
+        <div class="panel">
+          <h3 style="margin-top:0">Build log</h3>
+          <p style="font-size:0.88rem;margin:0">This one is still on the bench. I'll add bring-up photos, efficiency curves and thermal captures here as they come out of testing.</p>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <span>&copy; 2026 Ella Lewis</span>
+    <span>
+      <a href="mailto:elcslewis@gmail.com">email</a> &middot;
+      <a href="https://github.com/ecslewis">github</a> &middot;
+      <a href="https://www.linkedin.com/in/elcslewis/">linkedin</a>
+    </span>
+  </div>
+</footer>
+
+<script src="scroll.js" defer></script>
+
+</body>
+</html>

@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Research — Ella Lewis</title>
+<meta name="description" content="RF GaN HEMT compact modelling with high-temperature effects, validated to 500 °C — CSSTC 2026.">
+<link rel="stylesheet" href="style.css">
+<noscript><style>
+  /* JavaScript off: show everything immediately, no animation */
+  .reveal{opacity:1!important;transform:none!important;filter:none!important}
+  .spec-strip .spec{opacity:1!important;transform:none!important}
+  .section-head .rule{transform:scaleX(1)!important}
+  .timeline .tl-item::before{transform:scale(1)!important}
+</style></noscript>
+</head>
+<body>
+
+<header class="site-header">
+  <nav class="nav">
+    <a class="brand" href="index.html">ella_lewis<span class="dot">.</span>eng</a>
+    <div class="nav-links">
+      <a href="index.html">home</a>
+      <a href="projects.html">projects</a>
+      <a href="research.html" class="active">research</a>
+      <a href="about.html">about</a>
+      <a href="contact.html">contact</a>
+      <a href="resume.pdf">resume ↗</a>
+    </div>
+  </nav>
+</header>
+
+<main class="wrap">
+
+  <section class="hero" style="padding-bottom:24px">
+    <span class="kicker">Research &amp; Publications</span>
+    <h1 style="font-size:clamp(1.9rem,4.2vw,2.9rem)">A GaN HEMT compact model that holds at 500&nbsp;°C</h1>
+    <p class="lead">
+      Commercial GaN compact models are calibrated to about 185&nbsp;°C. Wildfire sensing,
+      downhole drilling and planetary probes need transistors working at 200–500&nbsp;°C.
+      This work extends the industry-standard MVSG model into that range and validates it
+      against measured devices from 22&nbsp;°C to 500&nbsp;°C.
+    </p>
+  </section>
+
+  <section class="tight">
+    <div class="spec-strip">
+      <div class="spec"><div class="k">Validated to</div><div class="v">500 °C</div></div>
+      <div class="spec"><div class="k">Prior models</div><div class="v">≤ 185 °C</div></div>
+      <div class="spec"><div class="k">Extraction steps</div><div class="v">7</div></div>
+      <div class="spec"><div class="k">Venue</div><div class="v">CSSTC 2026</div></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="cols">
+      <div>
+
+        <div class="section-head">
+          <span class="idx">01</span><h2>Why it matters</h2><span class="rule"></span>
+        </div>
+        <p>
+          There is a growing class of systems where electronics have to sit at the point of
+          measurement rather than in a thermally controlled enclosure — wildfire monitoring
+          above 200&nbsp;°C, downhole drilling instrumentation at 200–300&nbsp;°C, aerospace
+          hardware near engines, and planetary probes (the surface of Venus is around
+          467&nbsp;°C). In all of them the transistor itself has to survive the environment.
+        </p>
+        <p>
+          GaN is the right material for it: a 3.42&nbsp;eV bandgap gives a low intrinsic
+          carrier concentration, so the device still turns off as temperature climbs, and the
+          2DEG at the AlGaN/GaN heterointerface carries high current density. Silicon gives up
+          below 185&nbsp;°C. The NRC has a GaN process built specifically for extreme
+          environments — so the devices exist.
+        </p>
+        <p>
+          The gap is on the modelling side. A compact model is the only thing a circuit
+          designer ever sees of a transistor; if it is wrong, every circuit built on it is
+          wrong, and you usually find out after fabrication. MVSG — the MIT Virtual Source GaN
+          model, itself developed at Waterloo — is the industry standard, but its temperature
+          dependence was written for commercial ranges. Past 185&nbsp;°C the effects it leaves
+          out stop being small corrections.
+        </p>
+
+        <figure>
+          <span class="shot"><img src="images/csstc-motivation.jpg" alt="Slide showing extreme environment applications and their operating temperatures"></span>
+          <figcaption>Target applications and their temperature ranges — all outside commercial characterization.</figcaption>
+        </figure>
+
+        <div class="section-head" style="margin-top:48px">
+          <span class="idx">02</span><h2>What breaks at high temperature</h2><span class="rule"></span>
+        </div>
+        <p>Five mechanisms dominate, each with a clear physical origin:</p>
+        <table class="spec-table">
+          <tr><td>Carrier mobility ↓</td><td>Phonon scattering in the 2DEG cuts linear-region current</td></tr>
+          <tr><td>Injection velocity ↓</td><td>Virtual-source velocity degrades, cutting saturation current</td></tr>
+          <tr><td>Series resistance ↑</td><td>Contact and sheet resistance rise — more bias dropped outside the device</td></tr>
+          <tr><td>Threshold voltage ⇄</td><td>Shifts with temperature, primarily through bandgap narrowing</td></tr>
+          <tr><td>Gate leakage ↑↑</td><td>Thermally activated recombination — climbs by orders of magnitude</td></tr>
+        </table>
+        <p>
+          Superimposed on all five is self-heating, which couples them together. Device
+          temperature is ambient plus a rise computed from a first-order R<sub>th</sub>–C<sub>th</sub>
+          network driven by dissipated power. That closes a feedback loop: bias sets power,
+          power sets temperature rise, temperature rise modifies mobility and leakage, which
+          modifies current and therefore power. The model resolves it self-consistently.
+        </p>
+        <p>
+          The consequence is that self-heating is <em>bias-dependent</em> — small at low drain
+          bias, large at high drain bias. It reshapes the characteristics rather than shifting
+          them uniformly, and that reshaping is directly visible in the measured data.
+        </p>
+
+        <figure>
+          <span class="shot"><img src="images/csstc-selfheating.jpg" alt="Slide showing the electrothermal feedback loop between bias, dissipated power and device temperature"></span>
+          <figcaption>Electrothermal coupling — bias to power to temperature rise, and back through transport.</figcaption>
+        </figure>
+
+        <div class="section-head" style="margin-top:48px">
+          <span class="idx">03</span><h2>The extraction flow, and why order matters</h2><span class="rule"></span>
+        </div>
+        <p>
+          A compact model without an extraction procedure is of limited practical use, so the
+          second half of the work is a systematic flow: a baseline extraction at nominal
+          temperature following standard MVSG, then six steps for the temperature coefficients,
+          each tied to a specific measurement.
+        </p>
+        <table class="spec-table">
+          <tr><td>Step 0</td><td>Baseline at nominal temperature — standard MVSG flow at RT</td></tr>
+          <tr><td>Step 1</td><td>Series resistance (R<sub>C</sub>, R<sub>sh</sub>) — TLM test structures</td></tr>
+          <tr><td>Step 2</td><td>Threshold voltage — I<sub>D</sub>–V<sub>GS</sub> at low V<sub>DS</sub></td></tr>
+          <tr><td>Step 3</td><td>Mobility — I<sub>D</sub>–V<sub>DS</sub> at low V<sub>DS</sub></td></tr>
+          <tr><td>Step 4</td><td>Saturation velocity — I<sub>D</sub>–V<sub>DS</sub> in saturation</td></tr>
+          <tr><td>Step 5</td><td>Gate leakage, forward bias — I<sub>G</sub> at high V<sub>GS</sub></td></tr>
+          <tr><td>Step 6</td><td>Gate leakage, reverse recombination — I<sub>G</sub> at low V<sub>GS</sub></td></tr>
+        </table>
+        <p>
+          The sequence isn't arbitrary. These parameters are correlated, and extracting them
+          out of order lets error in one get absorbed into another. Fit mobility before series
+          resistance has been independently determined and the resistance error lands in the
+          mobility coefficient — you get a parameter that reproduces the data and means
+          nothing physically. Extracting resistance before transport, and low-bias regimes
+          before high-bias ones, keeps each parameter constrained to the regime where its
+          mechanism actually dominates.
+        </p>
+
+        <figure>
+          <span class="shot"><img src="images/csstc-extraction.jpg" alt="Slide showing the seven-step parameter extraction flow and required measurements"></span>
+          <figcaption>The extraction flow — each step paired with the measurement it needs.</figcaption>
+        </figure>
+
+        <div class="section-head" style="margin-top:48px">
+          <span class="idx">04</span><h2>Validation</h2><span class="rule"></span>
+        </div>
+        <p>
+          Validated against measured NRC 1st-generation extreme-environment HEMTs. Symbols are
+          measurement, lines are model — the same parameter set and same equations throughout,
+          with only temperature varied.
+        </p>
+
+        <figure>
+          <span class="shot"><img src="images/csstc-idvds.jpg" alt="Output characteristics ID-VDS at 22, 200 and 500 degrees Celsius, model versus measurement"></span>
+          <figcaption>Output characteristics I<sub>D</sub>–V<sub>DS</sub> at 22, 200 and 500&nbsp;°C. Note the current scale changing across the panels.</figcaption>
+        </figure>
+
+        <figure>
+          <span class="shot"><img src="images/csstc-gm.jpg" alt="Transconductance gm versus VDS at 22, 200 and 500 degrees Celsius"></span>
+          <figcaption>Transconductance g<sub>m</sub>–V<sub>DS</sub> across the same three temperatures.</figcaption>
+        </figure>
+
+        <p>
+          Peak drain current drops substantially between room temperature and 500&nbsp;°C,
+          consistent with the mobility and injection-velocity degradation above. The differing
+          curvature at high drain bias is self-heating, and the model reproduces it.
+        </p>
+
+        <figure>
+          <span class="shot"><img src="images/csstc-igvgs.jpg" alt="Gate leakage IG-VGS on a logarithmic axis spanning ten decades, at three temperatures"></span>
+          <figcaption>Gate leakage I<sub>G</sub>–V<sub>GS</sub> — logarithmic axis spanning close to ten decades of current.</figcaption>
+        </figure>
+
+        <p>
+          Gate leakage is the harder case, and the most interesting result. The separation
+          between drain-bias curves <em>within</em> each panel is a self-heating signature: at
+          higher drain bias, greater dissipation raises device temperature, so thermally
+          activated leakage increases. The same gate voltage produces different leakage purely
+          as a function of drain bias.
+        </p>
+        <p class="note">
+          A model without an electrothermal subcircuit collapses those conditions onto a single
+          characteristic. Reproducing the separation is evidence the thermal network is capturing
+          real physics rather than acting as an extra fitting knob.
+        </p>
+
+        <div class="section-head" style="margin-top:48px">
+          <span class="idx">05</span><h2>Conclusion &amp; next</h2><span class="rule"></span>
+        </div>
+        <p>
+          Temperature dependence added to MVSG for both channel current and gate leakage,
+          validated 22&nbsp;°C to 500&nbsp;°C, with a reproducible extraction flow that transfers
+          to other processes and device generations. Next: S-parameter and large-signal
+          validation, and second-generation devices — a step toward practical extreme-environment
+          GaN circuit design.
+        </p>
+
+        <div class="section-head" style="margin-top:56px">
+          <span class="idx">06</span><h2>GaN-on-Si integrated power stage</h2><span class="rule"></span>
+        </div>
+        <p>
+          Separate from the modelling work: new product development on a GaN-on-Si IPS — an
+          integrated power stage placing a silicon driver die on a unidirectional GaN device.
+          My contribution covers dynamic characterization, performance evaluation against
+          internal metrics, defining test procedures, and analysing optimal and sub-optimal
+          operating parameters including slew-rate control and protection features. Alongside
+          that, technology work with the FAE team on competitor benchmarking and packaging
+          layout practices for larger dies in low-ohmic and enhancement-mode GaN.
+        </p>
+
+      </div>
+
+      <aside>
+        <div class="panel" style="margin-bottom:20px">
+          <h3 style="margin-top:0">Publication</h3>
+          <p style="font-size:0.9rem; color:var(--fg);">
+            <strong>E. Lewis</strong>, R. Fang, D. Xu, J. Alant, R. Griffin, L. Wei,
+            “RF GaN HEMT Compact Modelling with High-Temperature Effects for Extreme
+            Environment Applications,” <em>21st Canadian Semiconductor Science and
+            Technology Conference (CSSTC)</em>, 2026.
+          </p>
+          <table class="spec-table">
+            <tr><td>Position</td><td>First author</td></tr>
+            <tr><td>Format</td><td>Oral presentation</td></tr>
+            <tr><td>Institutions</td><td>University of Waterloo · NRC Canada</td></tr>
+          </table>
+          <div class="btn-row" style="margin-top:20px">
+            <a class="btn primary" href="csstc-2026-abstract.pdf">Read the abstract ↗</a>
+          </div>
+        </div>
+
+        <div class="panel" style="margin-bottom:20px">
+          <h3 style="margin-top:0">Tools</h3>
+          <div class="tags">
+            <span class="tag">Verilog-A</span><span class="tag">MVSG</span>
+            <span class="tag">Keysight IC-CAP</span><span class="tag">SPICE</span>
+            <span class="tag">TLM structures</span><span class="tag">Wafer probing</span>
+          </div>
+        </div>
+
+        <div class="panel" style="margin-bottom:20px">
+          <h3 style="margin-top:0">Collaboration</h3>
+          <table class="spec-table">
+            <tr><td>Supervisor</td><td>Prof. Lan Wei</td></tr>
+            <tr><td>Partner</td><td>National Research Council of Canada</td></tr>
+            <tr><td>Devices</td><td>NRC 1st gen EE GaN HEMTs</td></tr>
+            <tr><td>Funding</td><td>NRC–Waterloo Collaboration Centre Funding Program (NUCC), Phase 3</td></tr>
+          </table>
+        </div>
+
+        <div class="panel">
+          <h3 style="margin-top:0">Material comparison</h3>
+          <table class="spec-table">
+            <tr><td>Si</td><td>1.12 eV · 1400 cm²/V·s</td></tr>
+            <tr><td>SiC</td><td>3.26 eV · 900 cm²/V·s</td></tr>
+            <tr><td>GaN</td><td>3.42 eV · 2000 cm²/V·s</td></tr>
+          </table>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <span>© 2026 Ella Lewis</span>
+    <span>
+      <a href="mailto:elcslewis@gmail.com">email</a> ·
+      <a href="https://github.com/ecslewis">github</a> ·
+      <a href="https://www.linkedin.com/in/elcslewis/">linkedin</a>
+    </span>
+  </div>
+</footer>
+
+<script src="scroll.js" defer></script>
+
+</body>
+</html>

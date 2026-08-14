@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hall-Effect Anti-Break-In Alarm &mdash; Ella Lewis</title>
+<link rel="stylesheet" href="style.css">
+<noscript><style>
+  /* JavaScript off: show everything immediately, no animation */
+  .reveal{opacity:1!important;transform:none!important;filter:none!important}
+  .spec-strip .spec{opacity:1!important;transform:none!important}
+  .section-head .rule{transform:scaleX(1)!important}
+  .timeline .tl-item::before{transform:scale(1)!important}
+</style></noscript>
+</head>
+<body>
+
+<header class="site-header">
+  <nav class="nav">
+    <a class="brand" href="index.html">ella_lewis<span class="dot">.</span>eng</a>
+    <div class="nav-links">
+      <a href="index.html">home</a>
+      <a href="projects.html" class="active">projects</a>
+      <a href="research.html" class="">research</a>
+      <a href="about.html">about</a>
+      <a href="contact.html">contact</a>
+      <a href="resume.pdf">resume &#8599;</a>
+    </div>
+  </nav>
+</header>
+
+<main class="wrap">
+
+  <section class="hero" style="padding-bottom:24px">
+    <a class="back" href="projects.html">&larr; back to projects</a>
+    <span class="kicker">Embedded Systems &middot; Prototyping &middot; Accessibility</span>
+    <h1 style="font-size:clamp(1.8rem,4vw,2.7rem)">Hall-Effect Anti-Break-In Alarm for Hard-of-Hearing Users</h1>
+    <p class="lead">An STM32-based intrusion alarm using hall-effect sensing on doors and windows, with the output stage specified around a 70&nbsp;dB intensity range chosen for users with hearing loss.</p>
+  </section>
+
+  <section class="tight">
+    <div class="spec-strip">
+      <div class="spec"><div class="k">MCU</div><div class="v">STM32</div></div>
+      <div class="spec"><div class="k">Sensing</div><div class="v">Hall effect</div></div>
+      <div class="spec"><div class="k">Output</div><div class="v">70 dB range</div></div>
+      <div class="spec"><div class="k">Status</div><div class="v">Prototyped</div></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="cols">
+      <div>
+        <div class="section-head">
+          <span class="idx">01</span><h2>The brief</h2><span class="rule"></span>
+        </div>
+        <p>Standard intrusion alarms assume the occupant can hear them. For someone with significant hearing loss that assumption fails exactly when it matters most. This prototype targets a 70&nbsp;dB intensity range selected as the best fit for hard-of-hearing individuals, rather than defaulting to whatever the cheapest buzzer happens to produce.</p>
+        <div class="section-head" style="margin-top:48px">
+          <span class="idx">02</span><h2>How it works</h2><span class="rule"></span>
+        </div>
+        <p>A hall-effect sensor and paired magnet sit across the door or window seam. When the opening breaks, the field at the sensor changes and the STM32 registers the state transition and triggers the alarm output. Hall sensing is a good fit here &mdash; there are no mechanical contacts to wear out or be jammed, and the sensor can be mounted concealed on the inside face of the frame.</p>
+        <div class="section-head" style="margin-top:48px">
+          <span class="idx">03</span><h2>Schematic</h2><span class="rule"></span>
+        </div>
+        <figure>
+          <span class="shot pad"><img src="images/stm32-sch.jpg" alt="Schematic of the STM32 hall-effect alarm system"></span>
+          <figcaption>Prototype schematic capture.</figcaption>
+        </figure>
+        <div class="section-head" style="margin-top:48px">
+          <span class="idx">04</span><h2>Documentation</h2><span class="rule"></span>
+        </div>
+        <p>A full design document and source documentation accompany the prototype, covering the sensing threshold selection and the reasoning behind the acoustic output specification.</p>
+        <p class="note">Design document and source repository link still to be added here.</p>
+      </div>
+      <aside>
+        <div class="panel" style="margin-bottom:20px">
+          <h3 style="margin-top:0">At a glance</h3>
+          <table class="spec-table">
+            <tr><td>Role</td><td>Design, firmware, prototype</td></tr>
+            <tr><td>Year</td><td>2025</td></tr>
+            <tr><td>Platform</td><td>STM32</td></tr>
+            <tr><td>Sensor</td><td>Hall effect</td></tr>
+            <tr><td>Output</td><td>70 dB intensity range</td></tr>
+            <tr><td>Driver</td><td>Accessibility requirement</td></tr>
+          </table>
+
+        </div>
+
+      </aside>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <span>&copy; 2026 Ella Lewis</span>
+    <span>
+      <a href="mailto:elcslewis@gmail.com">email</a> &middot;
+      <a href="https://github.com/ecslewis">github</a> &middot;
+      <a href="https://www.linkedin.com/in/elcslewis/">linkedin</a>
+    </span>
+  </div>
+</footer>
+
+<script src="scroll.js" defer></script>
+
+</body>
+</html>

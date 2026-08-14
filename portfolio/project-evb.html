@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TEMPLATE — duplicate this file for a new project</title>
+<link rel="stylesheet" href="style.css">
+<noscript><style>
+  /* JavaScript off: show everything immediately, no animation */
+  .reveal{opacity:1!important;transform:none!important;filter:none!important}
+  .spec-strip .spec{opacity:1!important;transform:none!important}
+  .section-head .rule{transform:scaleX(1)!important}
+  .timeline .tl-item::before{transform:scale(1)!important}
+</style></noscript>
+</head>
+<body>
+
+<!-- =========================================================================
+     BLANK PROJECT TEMPLATE
+     Nothing links to this page. Copy it, rename it (e.g. project-newthing.html),
+     fill it in, then add a card for it on projects.html.
+     ========================================================================= -->
+
+<header class="site-header">
+  <nav class="nav">
+    <a class="brand" href="index.html">ella_lewis<span class="dot">.</span>eng</a>
+    <div class="nav-links">
+      <a href="index.html">home</a>
+      <a href="projects.html" class="active">projects</a>
+      <a href="research.html">research</a>
+      <a href="about.html">about</a>
+      <a href="contact.html">contact</a>
+      <a href="resume.pdf">resume ↗</a>
+    </div>
+  </nav>
+</header>
+
+<main class="wrap">
+
+  <section class="hero" style="padding-bottom:24px">
+    <a class="back" href="projects.html">← back to projects</a>
+    <span class="kicker">Discipline · Discipline · Discipline</span>
+    <h1 style="font-size:clamp(1.8rem,4vw,2.7rem)">Project title</h1>
+    <p class="lead">
+      Two or three sentences: what it is, what makes it non-trivial, and the headline
+      result. Assume the reader stops here — make these sentences carry the project.
+    </p>
+  </section>
+
+  <section class="tight">
+    <div class="spec-strip">
+      <div class="spec"><div class="k">Spec</div><div class="v">Value</div></div>
+      <div class="spec"><div class="k">Spec</div><div class="v">Value</div></div>
+      <div class="spec"><div class="k">Spec</div><div class="v">Value</div></div>
+      <div class="spec"><div class="k">Status</div><div class="v">Active</div></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="cols">
+      <div>
+
+        <div class="section-head">
+          <span class="idx">01</span><h2>The problem</h2><span class="rule"></span>
+        </div>
+        <p>What was hard, and why the obvious approach didn't work.</p>
+
+        <div class="section-head" style="margin-top:48px">
+          <span class="idx">02</span><h2>What I built</h2><span class="rule"></span>
+        </div>
+        <p>The design, and the reasoning behind the choices that weren't obvious.</p>
+
+        <!-- Single figure -->
+        <figure>
+          <span class="shot"><img src="images/your-image.jpg" alt="Describe the image"></span>
+          <figcaption>Caption.</figcaption>
+        </figure>
+
+        <!-- Side-by-side figures -->
+        <div class="shot-grid">
+          <figure><span class="shot"><img src="images/a.jpg" alt=""></span><figcaption>Front</figcaption></figure>
+          <figure><span class="shot"><img src="images/b.jpg" alt=""></span><figcaption>Back</figcaption></figure>
+        </div>
+        <!-- Add class "pad" for schematics on white: <span class="shot pad"> -->
+
+        <div class="section-head" style="margin-top:48px">
+          <span class="idx">03</span><h2>Specs</h2><span class="rule"></span>
+        </div>
+        <table class="spec-table">
+          <tr><td>Parameter</td><td>Value or description</td></tr>
+          <tr><td>Parameter</td><td>Value or description</td></tr>
+        </table>
+
+        <p class="note">Use this callout for caveats and limitations.</p>
+
+        <div class="section-head" style="margin-top:48px">
+          <span class="idx">04</span><h2>Results &amp; what's next</h2><span class="rule"></span>
+        </div>
+        <p>Numbers, validation, what you'd do differently.</p>
+
+      </div>
+
+      <aside>
+        <div class="panel" style="margin-bottom:20px">
+          <h3 style="margin-top:0">At a glance</h3>
+          <table class="spec-table">
+            <tr><td>Role</td><td>What you owned</td></tr>
+            <tr><td>Timeline</td><td>Year</td></tr>
+            <tr><td>Tools</td><td>Toolchain</td></tr>
+          </table>
+          <div class="btn-row" style="margin-top:20px">
+            <a class="btn" href="#">Source ↗</a>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <span>© 2026 Ella Lewis</span>
+    <span>
+      <a href="mailto:elcslewis@gmail.com">email</a> ·
+      <a href="https://github.com/ecslewis">github</a> ·
+      <a href="https://www.linkedin.com/in/elcslewis/">linkedin</a>
+    </span>
+  </div>
+</footer>
+
+<script src="scroll.js" defer></script>
+
+</body>
+</html>

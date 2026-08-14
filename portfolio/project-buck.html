@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Adjustable Buck Converter &mdash; Ella Lewis</title>
+<link rel="stylesheet" href="style.css">
+<noscript><style>
+  /* JavaScript off: show everything immediately, no animation */
+  .reveal{opacity:1!important;transform:none!important;filter:none!important}
+  .spec-strip .spec{opacity:1!important;transform:none!important}
+  .section-head .rule{transform:scaleX(1)!important}
+  .timeline .tl-item::before{transform:scale(1)!important}
+</style></noscript>
+</head>
+<body>
+
+<header class="site-header">
+  <nav class="nav">
+    <a class="brand" href="index.html">ella_lewis<span class="dot">.</span>eng</a>
+    <div class="nav-links">
+      <a href="index.html">home</a>
+      <a href="projects.html" class="active">projects</a>
+      <a href="research.html" class="">research</a>
+      <a href="about.html">about</a>
+      <a href="contact.html">contact</a>
+      <a href="resume.pdf">resume &#8599;</a>
+    </div>
+  </nav>
+</header>
+
+<main class="wrap">
+
+  <section class="hero" style="padding-bottom:24px">
+    <a class="back" href="projects.html">&larr; back to projects</a>
+    <span class="kicker">Power Electronics &middot; PCB Design</span>
+    <h1 style="font-size:clamp(1.8rem,4vw,2.7rem)">Adjustable Buck Converter Daughter Card</h1>
+    <p class="lead">A small step-down card that takes anything from 8 to 40&nbsp;V in and produces a trim-set output. Built as a reusable building block for other test setups rather than as an end product in itself.</p>
+  </section>
+
+  <section class="tight">
+    <div class="spec-strip">
+      <div class="spec"><div class="k">Controller</div><div class="v">LM2596S-ADJ</div></div>
+      <div class="spec"><div class="k">Input</div><div class="v">8&ndash;40 V</div></div>
+      <div class="spec"><div class="k">Output</div><div class="v">Adjustable</div></div>
+      <div class="spec"><div class="k">Layers</div><div class="v">2</div></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="cols">
+      <div>
+        <div class="section-head">
+          <span class="idx">01</span><h2>What it is</h2><span class="rule"></span>
+        </div>
+        <p>An LM2596S-ADJ analog buck regulator on a two-layer external daughter card. Input range is 8&ndash;40&nbsp;V; output voltage is set by a trim resistor in the feedback divider, so one board covers a wide range of downstream requirements without a respin.</p>
+        <div class="section-head" style="margin-top:48px">
+          <span class="idx">02</span><h2>Why analog control</h2><span class="rule"></span>
+        </div>
+        <p>For a utility rail there is no reason to spend a microcontroller and a firmware maintenance burden on something a fixed-function regulator does well. The LM2596S-ADJ is old, extremely well characterized, and its application circuit is documented to death &mdash; which is exactly what you want in a board whose job is to be boring and reliable underneath more interesting hardware.</p>
+        <div class="section-head" style="margin-top:48px">
+          <span class="idx">03</span><h2>Board &amp; schematic</h2><span class="rule"></span>
+        </div>
+        <figure>
+          <span class="shot"><img src="images/buck-3d.jpg" alt="3D render of the adjustable buck converter card"></span>
+          <figcaption>Assembled render &mdash; regulator, inductor and bulk capacitance on a compact 2-layer card.</figcaption>
+        </figure>
+        <figure>
+          <span class="shot pad"><img src="images/buck-sch.jpg" alt="Schematic of the adjustable buck converter"></span>
+          <figcaption>Application schematic.</figcaption>
+        </figure>
+        <div class="section-head" style="margin-top:48px">
+          <span class="idx">04</span><h2>Reuse</h2><span class="rule"></span>
+        </div>
+        <p>The buck/boost stage in the 5000&nbsp;mAh battery pack builds directly on what came out of this card. Small, self-contained boards like this are worth building precisely because they turn into subsystems of the bigger ones later.</p>
+      </div>
+      <aside>
+        <div class="panel" style="margin-bottom:20px">
+          <h3 style="margin-top:0">At a glance</h3>
+          <table class="spec-table">
+            <tr><td>Role</td><td>Schematic &amp; layout</td></tr>
+            <tr><td>Year</td><td>2025</td></tr>
+            <tr><td>Controller</td><td>LM2596S-ADJ</td></tr>
+            <tr><td>Input</td><td>8&ndash;40 V</td></tr>
+            <tr><td>Output</td><td>Adjustable via R1 trim</td></tr>
+            <tr><td>Form</td><td>External daughter card</td></tr>
+          </table>
+
+        </div>
+
+      </aside>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <span>&copy; 2026 Ella Lewis</span>
+    <span>
+      <a href="mailto:elcslewis@gmail.com">email</a> &middot;
+      <a href="https://github.com/ecslewis">github</a> &middot;
+      <a href="https://www.linkedin.com/in/elcslewis/">linkedin</a>
+    </span>
+  </div>
+</footer>
+
+<script src="scroll.js" defer></script>
+
+</body>
+</html>

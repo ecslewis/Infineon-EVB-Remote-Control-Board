@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Room Watchdog — mmWave Sensor Module — Ella Lewis</title>
+<link rel="stylesheet" href="style.css">
+<noscript><style>
+  /* JavaScript off: show everything immediately, no animation */
+  .reveal{opacity:1!important;transform:none!important;filter:none!important}
+  .spec-strip .spec{opacity:1!important;transform:none!important}
+  .section-head .rule{transform:scaleX(1)!important}
+  .timeline .tl-item::before{transform:scale(1)!important}
+</style></noscript>
+</head>
+<body>
+
+<header class="site-header">
+  <nav class="nav">
+    <a class="brand" href="index.html">ella_lewis<span class="dot">.</span>eng</a>
+    <div class="nav-links">
+      <a href="index.html">home</a>
+      <a href="projects.html" class="active">projects</a>
+      <a href="research.html">research</a>
+      <a href="about.html">about</a>
+      <a href="contact.html">contact</a>
+      <a href="resume.pdf">resume ↗</a>
+    </div>
+  </nav>
+</header>
+
+<main class="wrap">
+
+  <section class="hero" style="padding-bottom:24px">
+    <a class="back" href="projects.html">← back to projects</a>
+    <span class="kicker">PCB Design · RF · Embedded</span>
+    <h1 style="font-size:clamp(1.8rem,4vw,2.7rem)">Room Watchdog — mmWave Sensor Module</h1>
+    <p class="lead">
+      A battery-powered room occupancy monitor pairing an LD2410 24&nbsp;GHz mmWave radar
+      with a PIR sensor on an ESP32-S3-WROOM. Detects a walk-in event and notifies over
+      Wi-Fi. Two board revisions, schematic through layout to bring-up.
+    </p>
+  </section>
+
+  <section class="tight">
+    <div class="spec-strip">
+      <div class="spec"><div class="k">Radar</div><div class="v">LD2410 · 24 GHz</div></div>
+      <div class="spec"><div class="k">MCU</div><div class="v">ESP32-S3-WROOM</div></div>
+      <div class="spec"><div class="k">Supply</div><div class="v">Li-ion + USB-C</div></div>
+      <div class="spec"><div class="k">Layers</div><div class="v">2</div></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="cols">
+      <div>
+
+        <div class="section-head">
+          <span class="idx">01</span><h2>The brief</h2><span class="rule"></span>
+        </div>
+        <p>
+          Snacks were going missing from a bedroom during the day. The board needed to detect
+          someone walking into the room and push a notification to a phone over Wi-Fi —
+          cheap to build, easy to maintain, and running off a battery so it could go anywhere
+          near the door without a wall socket.
+        </p>
+
+        <div class="section-head" style="margin-top:48px">
+          <span class="idx">02</span><h2>Why two sensors</h2><span class="rule"></span>
+        </div>
+        <p>
+          A PIR sensor detects <em>changes</em> in infrared radiation. It draws almost nothing
+          and suits continuous monitoring, but a person sitting still looks identical to an
+          empty room. The 24&nbsp;GHz mmWave radar picks up very small motion at much higher
+          sensitivity — at the cost of real current draw.
+        </p>
+        <p>
+          Running both improves detection reliability and cuts false positives. More usefully,
+          it lets the ESP32 drop into low-power sleep while the PIR keeps watch, and only wake
+          the radar when the PIR sees something. Presence detection without paying the radar's
+          power bill continuously.
+        </p>
+
+        <figure>
+          <span class="shot"><img src="images/mmwave-block.jpg" alt="System block diagram showing sensors, MCU, charger and USB-C port"></span>
+          <figcaption>System overview — dual sensor inputs, ESP32-S3-WROOM, battery charger and USB-C.</figcaption>
+        </figure>
+
+        <div class="section-head" style="margin-top:48px">
+          <span class="idx">03</span><h2>Power architecture</h2><span class="rule"></span>
+        </div>
+        <p>
+          The board runs from the Li-ion cell when USB-C is disconnected, and charges the cell
+          whenever USB-C is present — so it keeps operating when external power is pulled. The
+          AP2112 LDO accepts roughly 2.5–6&nbsp;V in, which comfortably covers the cell's
+          4.2&nbsp;V–3.0&nbsp;V range and generates the 3.3&nbsp;V rail for the ESP32 and
+          supporting logic.
+        </p>
+        <table class="spec-table">
+          <tr><td>Fully charged</td><td>4.2 V</td></tr>
+          <tr><td>Nominal</td><td>3.7 V</td></tr>
+          <tr><td>Discharged</td><td>~3.0 V</td></tr>
+        </table>
+
+        <div class="section-head" style="margin-top:48px">
+          <span class="idx">04</span><h2>The bug that mattered</h2><span class="rule"></span>
+        </div>
+        <p>
+          Debugging turned up a real design fault: <strong>the LD2410 requires a regulated
+          5&nbsp;V supply, and the battery never exceeds 4.2&nbsp;V.</strong> The radar
+          simply cannot be powered from the cell as the board is built. Everything else in the
+          power architecture was right, and this one requirement invalidated the headline
+          feature — a battery-powered presence sensor that can't run its presence sensor on
+          the battery.
+        </p>
+        <p>
+          The working fix is an external 5&nbsp;V supply during debug. The real fix, queued
+          for the next revision, is an integrated boost converter generating a regulated
+          5&nbsp;V rail from the Li-ion cell.
+        </p>
+        <p class="note">
+          Worth stating plainly rather than quietly fixing in a respin: the failure was in
+          reading the sensor's supply requirement against the battery's actual voltage range
+          before committing the power tree.
+        </p>
+
+        <div class="section-head" style="margin-top:48px">
+          <span class="idx">05</span><h2>Layout</h2><span class="rule"></span>
+        </div>
+        <p>
+          Two layers, given the relative simplicity. The constraints that drove the placement
+          were the ESP32 antenna keep-out, mmWave sensor clearance, PIR clearance, and power
+          integrity across the board. Decoupling sits close to the ESP32 and sensor supply
+          pins, with ground copper pours providing a low-impedance return. The USB differential
+          pair is routed together with closely matched lengths.
+        </p>
+        <table class="spec-table">
+          <tr><td>LD2410 5 V supply</td><td>0.2 mm — ~80 mA load</td></tr>
+          <tr><td>VBAT and +5 V rails</td><td>0.5 mm — higher current path</td></tr>
+          <tr><td>USB-C role</td><td>Sink — CC pins pulled down to request power</td></tr>
+        </table>
+        <p>
+          Both sensors face the same direction, which sounds cosmetic but makes the thing
+          actually mountable.
+        </p>
+
+        <div class="shot-grid">
+          <figure><span class="shot"><img src="images/mmwave-v10.jpg" alt="mmWave sensor v1.0 front render"></span><figcaption>v1.0 — front</figcaption></figure>
+          <figure><span class="shot"><img src="images/mmwave-v10-back.jpg" alt="mmWave sensor v1.0 back render"></span><figcaption>v1.0 — back</figcaption></figure>
+        </div>
+
+        <figure>
+          <span class="shot pad"><img src="images/mmwave-sch.jpg" alt="Schematic of the mmWave sensor module"></span>
+          <figcaption>v1.0 schematic capture.</figcaption>
+        </figure>
+
+        <div class="section-head" style="margin-top:48px">
+          <span class="idx">06</span><h2>Revision 1.1 — what changed</h2><span class="rule"></span>
+        </div>
+        <p>Every change below came out of building and using v1.0:</p>
+        <table class="spec-table">
+          <tr><td>MCU</td><td>Moved to the ESP32-S3-WROOM module with a Wi-Fi antenna connection</td></tr>
+          <tr><td>Sensor orientation</td><td>PIR and mmWave mounting ports now face the same direction</td></tr>
+          <tr><td>Power loop</td><td>Battery power loop shortened to cut parasitic inductance</td></tr>
+          <tr><td>Silkscreen</td><td>Identifiers added for mounting ports and key test points</td></tr>
+          <tr><td>Debug</td><td>Test points added on power rails and sensor signal rails</td></tr>
+          <tr><td>Flashing</td><td>Physical RESET button alongside BOOT</td></tr>
+          <tr><td>PIR supply</td><td>Dedicated regulator for the +5 V PIR V<sub>DD</sub></td></tr>
+          <tr><td>Protection</td><td>TVS diodes on USB-C D+/D− lines for ESD</td></tr>
+        </table>
+
+        <div class="shot-grid">
+          <figure><span class="shot"><img src="images/mmwave-v11.jpg" alt="mmWave sensor v1.1 3D render"></span><figcaption>v1.1 — assembled render</figcaption></figure>
+          <figure><span class="shot"><img src="images/mmwave-v11-layout.jpg" alt="mmWave sensor v1.1 layout"></span><figcaption>v1.1 — copper layout</figcaption></figure>
+        </div>
+
+        <figure>
+          <span class="shot"><img src="images/mmwave-v11-antenna.jpg" alt="Layout showing antenna region and keep-out zones"></span>
+          <figcaption>Antenna region with KEEP CLEAR zones called out on the silkscreen.</figcaption>
+        </figure>
+
+        <div class="section-head" style="margin-top:48px">
+          <span class="idx">07</span><h2>Bring-up &amp; validation</h2><span class="rule"></span>
+        </div>
+        <p>
+          Visual inspection of solder joints, component orientation, sensor mounting direction
+          and connector placement first. Then continuity, input current verification under
+          100&nbsp;mA, LDO input/output measurement, and MCU supply verification. USB-C power
+          test confirms the LED lights and all rails come up. Firmware flashing is the standard
+          ESP32 dance — hold BOOT, press and release RESET, release BOOT, flash, reset to run.
+          Functional test confirms the sensors detect occupancy and the notification goes out
+          over Wi-Fi.
+        </p>
+
+        <div class="section-head" style="margin-top:48px">
+          <span class="idx">08</span><h2>Next revision</h2><span class="rule"></span>
+        </div>
+        <table class="spec-table">
+          <tr><td>Power</td><td>Integrated 5 V boost converter — the LD2410 fix</td></tr>
+          <tr><td>Layout</td><td>Reduce power loop area</td></tr>
+          <tr><td>Placement</td><td>Optimise sensor positioning</td></tr>
+          <tr><td>Firmware</td><td>Improve low-power operation</td></tr>
+          <tr><td>Monitoring</td><td>Add a battery fuel gauge</td></tr>
+          <tr><td>Mechanical</td><td>Design an enclosure</td></tr>
+        </table>
+
+      </div>
+
+      <aside>
+        <div class="panel" style="margin-bottom:20px">
+          <h3 style="margin-top:0">At a glance</h3>
+          <table class="spec-table">
+            <tr><td>Role</td><td>Schematic, layout, firmware</td></tr>
+            <tr><td>Timeline</td><td>May – July 2026</td></tr>
+            <tr><td>Revisions</td><td>v1.0, v1.1.1</td></tr>
+            <tr><td>MCU</td><td>ESP32-S3-WROOM</td></tr>
+            <tr><td>Sensors</td><td>LD2410 24 GHz + PIR</td></tr>
+            <tr><td>Power</td><td>Li-ion, AP2112 LDO</td></tr>
+            <tr><td>Input</td><td>USB-C sink, TVS protected</td></tr>
+            <tr><td>Tools</td><td>KiCad, Embedded C</td></tr>
+          </table>
+          <div class="btn-row" style="margin-top:20px">
+            <a class="btn primary" href="room-watchdog-report.pdf">Full design report ↗</a>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h3 style="margin-top:0">Report contents</h3>
+          <p style="font-size:0.88rem;margin:0">
+            17 pages covering requirements, power architecture, layout considerations,
+            sensor and MCU selection, USB-C configuration, trace width calculation,
+            the full validation procedure and revision history.
+          </p>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <span>© 2026 Ella Lewis</span>
+    <span>
+      <a href="mailto:elcslewis@gmail.com">email</a> ·
+      <a href="https://github.com/ecslewis">github</a> ·
+      <a href="https://www.linkedin.com/in/elcslewis/">linkedin</a>
+    </span>
+  </div>
+</footer>
+
+<script src="scroll.js" defer></script>
+
+</body>
+</html>

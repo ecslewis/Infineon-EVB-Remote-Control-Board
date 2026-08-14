@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Contact — Ella Lewis</title>
+<link rel="stylesheet" href="style.css">
+<noscript><style>
+  /* JavaScript off: show everything immediately, no animation */
+  .reveal{opacity:1!important;transform:none!important;filter:none!important}
+  .spec-strip .spec{opacity:1!important;transform:none!important}
+  .section-head .rule{transform:scaleX(1)!important}
+  .timeline .tl-item::before{transform:scale(1)!important}
+</style></noscript>
+</head>
+<body>
+
+<header class="site-header">
+  <nav class="nav">
+    <a class="brand" href="index.html">ella_lewis<span class="dot">.</span>eng</a>
+    <div class="nav-links">
+      <a href="index.html">home</a>
+      <a href="projects.html">projects</a>
+      <a href="research.html">research</a>
+      <a href="about.html">about</a>
+      <a href="contact.html" class="active">contact</a>
+      <a href="resume.pdf">resume ↗</a>
+    </div>
+  </nav>
+</header>
+
+<main class="wrap">
+
+  <section class="hero" style="padding-bottom:32px">
+    <span class="kicker">Contact</span>
+    <h1 style="font-size:clamp(2rem,4.5vw,3rem)">Let's talk.</h1>
+    <p class="lead">
+      Open to power electronics and embedded roles, and always happy to talk about
+      GaN, weird switching waveforms, or a board that won't behave.
+      Email is the fastest way to reach me.
+    </p>
+  </section>
+
+  <section class="tight">
+    <div class="cols">
+
+      <div class="panel">
+        <h3 style="margin-top:0">Send a message</h3>
+        <!-- ============================================================
+             This form needs a backend to actually send anything.
+             Easiest option: sign up at formspree.io (free tier), then
+             replace YOUR_ID below with the ID they give you.
+             Or just delete the form and keep the links on the right.
+             ============================================================ -->
+        <form action="https://formspree.io/f/YOUR_ID" method="POST">
+          <label for="name">Name</label>
+          <input id="name" name="name" type="text" required>
+
+          <label for="email">Email</label>
+          <input id="email" name="email" type="email" required>
+
+          <label for="message">Message</label>
+          <textarea id="message" name="message" required></textarea>
+
+          <button class="btn primary" type="submit" style="cursor:pointer">Send →</button>
+        </form>
+      </div>
+
+      <aside>
+        <div class="panel">
+          <h3 style="margin-top:0">Elsewhere</h3>
+          <ul class="contact-list">
+            <li>
+              <a href="mailto:elcslewis@gmail.com">
+                <span>elcslewis@gmail.com</span>
+                <span class="label">email</span>
+              </a>
+            </li>
+            <li>
+              <a href="https://www.linkedin.com/in/elcslewis/">
+                <span>/in/elcslewis</span>
+                <span class="label">linkedin</span>
+              </a>
+            </li>
+            <li>
+              <a href="https://github.com/ecslewis">
+                <span>github.com/ecslewis</span>
+                <span class="label">github</span>
+              </a>
+            </li>
+            <li>
+              <a href="resume.pdf">
+                <span>Download CV</span>
+                <span class="label">pdf</span>
+              </a>
+            </li>
+          </ul>
+        </div>
+
+        <p class="note" style="margin-top:20px">
+          Replace the <code>#</code> links with your real profile URLs before publishing.
+        </p>
+      </aside>
+
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <span>© 2026 Ella Lewis</span>
+    <span>
+      <a href="mailto:elcslewis@gmail.com">email</a> ·
+      <a href="https://github.com/ecslewis">github</a> ·
+      <a href="https://www.linkedin.com/in/elcslewis/">linkedin</a>
+    </span>
+  </div>
+</footer>
+
+<script src="scroll.js" defer></script>
+
+</body>
+</html>
